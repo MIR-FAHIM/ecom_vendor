@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('users')->group(function () {
@@ -19,3 +20,14 @@ Route::prefix('users')->group(function () {
     Route::delete('/delete/{id}', [UserController::class, 'deleteUser']);
 });
 
+Route::prefix('categories')->group(function () {
+    Route::post('/create', [CategoryController::class, 'createCategory']);
+
+    Route::get('/list', [CategoryController::class, 'listCategories']);
+    Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails']);
+    Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren']);
+
+    Route::put('/update/{id}', [CategoryController::class, 'updateCategory']);
+
+    Route::delete('/delete/{id}', [CategoryController::class, 'deleteCategory']);
+});
