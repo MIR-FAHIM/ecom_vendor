@@ -44,6 +44,11 @@ class Product extends Model
         'is_active' => 'boolean',
     ];
 
+    public function primaryImage()
+    {
+        // Your model class is ProductImage, table is product_images
+        return $this->belongsTo(ProductImage::class, 'primary_image_id');
+    }
     public function shop()
     {
         // Your model class is Shops (plural), table is shops
