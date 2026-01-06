@@ -5,7 +5,7 @@ SHOW TABLES;
 DROP TABLE content_images;
 USE database_name;
 DESCRIBE content_images;
-php artisan make:model VibeRoomMessage -m  
+php artisan make:model ProductImage -m  
 php artisan make:migration UserReview
 php artisan route:list
 php artisan route:clear
@@ -20,4 +20,4 @@ DB_PASSWORD=mir0188_2024
 
 
 
-
+git remote add origin https://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@github.com/MIR-FAHIM/ecom_vendor.git
