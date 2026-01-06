@@ -6,7 +6,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-
+use Illuminate\Support\Facades\DB;
 class ProductController extends Controller
 {
     private function success($message, $data = null, int $code = 200)
@@ -31,94 +31,127 @@ class ProductController extends Controller
      * POST /products/create
      * Creates product (optionally with images array)
      */
-    public function createProduct(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'sub_category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-                'related_id' => ['nullable', 'integer', 'exists:products,id'],
+public function createProduct(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'sub_category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'related_id' => ['nullable', 'integer', 'exists:products,id'],
 
-                'name' => ['nullable', 'string', 'max:255'],
-                'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
-                'sku' => ['nullable', 'string', 'max:255', 'unique:products,sku'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
+            'sku' => ['nullable', 'string', 'max:255', 'unique:products,sku'],
 
-                'short_description' => ['nullable', 'string'],
-                'description' => ['nullable', 'string'],
+            'short_description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
 
-                'thumbnail' => ['nullable', 'string', 'max:255'],
+            'thumbnail' => ['nullable', 'string', 'max:255'],
 
-                'price' => ['nullable', 'numeric', 'min:0'],
-                'sale_price' => ['nullable', 'numeric', 'min:0'],
-                'cost_price' => ['nullable', 'numeric', 'min:0'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'sale_price' => ['nullable', 'numeric', 'min:0'],
+            'cost_price' => ['nullable', 'numeric', 'min:0'],
 
-                'stock' => ['nullable', 'integer', 'min:0'],
-                'track_stock' => ['nullable', 'boolean'],
-                'is_active' => ['nullable', 'boolean'],
+            'stock' => ['nullable', 'integer', 'min:0'],
+            'track_stock' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
 
-                'status' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'string', 'max:50'],
+        ]);
 
-                // Optional images array (store paths/urls)
-                'images' => ['nullable', 'array'],
-                'images.*.image' => ['nullable', 'string', 'max:255'],
-                'images.*.alt_text' => ['nullable', 'string', 'max:255'],
-                'images.*.sort_order' => ['nullable', 'integer'],
-                'images.*.is_primary' => ['nullable', 'boolean'],
-                'images.*.status' => ['nullable', 'string', 'max:50'],
-            ]);
+        $product = Product::create([
+            'shop_id' => $validated['shop_id'] ?? null,
+            'category_id' => $validated['category_id'] ?? null,
+            'sub_category_id' => $validated['sub_category_id'] ?? null,
+            'brand_id' => $validated['brand_id'] ?? null,
+            'related_id' => $validated['related_id'] ?? null,
 
-            $product = Product::create([
-                'shop_id' => $validated['shop_id'] ?? null,
-                'category_id' => $validated['category_id'] ?? null,
-                'sub_category_id' => $validated['sub_category_id'] ?? null,
-                'brand_id' => $validated['brand_id'] ?? null,
-                'related_id' => $validated['related_id'] ?? null,
+            'name' => $validated['name'] ?? null,
+            'slug' => $validated['slug'] ?? null,
+            'sku' => $validated['sku'] ?? null,
 
-                'name' => $validated['name'] ?? null,
-                'slug' => $validated['slug'] ?? null,
-                'sku' => $validated['sku'] ?? null,
+            'short_description' => $validated['short_description'] ?? null,
+            'description' => $validated['description'] ?? null,
 
-                'short_description' => $validated['short_description'] ?? null,
-                'description' => $validated['description'] ?? null,
+            'thumbnail' => $validated['thumbnail'] ?? null,
 
-                'thumbnail' => $validated['thumbnail'] ?? null,
+            'price' => $validated['price'] ?? null,
+            'sale_price' => $validated['sale_price'] ?? null,
+            'cost_price' => $validated['cost_price'] ?? null,
 
-                'price' => $validated['price'] ?? null,
-                'sale_price' => $validated['sale_price'] ?? null,
-                'cost_price' => $validated['cost_price'] ?? null,
+            'stock' => $validated['stock'] ?? null,
+            'track_stock' => array_key_exists('track_stock', $validated) ? (bool) $validated['track_stock'] : null,
+            'is_active' => array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : null,
 
-                'stock' => $validated['stock'] ?? null,
-                'track_stock' => array_key_exists('track_stock', $validated) ? (bool) $validated['track_stock'] : null,
-                'is_active' => array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : null,
+            'status' => $validated['status'] ?? null,
+        ]);
 
-                'status' => $validated['status'] ?? null,
-            ]);
+        return $this->success('Product created successfully', $product, 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return $this->failed('Validation failed', $e->errors(), 422);
+    } catch (\Throwable $e) {
+        return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+    }
+}
 
-            // Optional: create images
-            if (!empty($validated['images']) && is_array($validated['images'])) {
-                foreach ($validated['images'] as $img) {
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image' => $img['image'] ?? null,
-                        'alt_text' => $img['alt_text'] ?? null,
-                        'sort_order' => $img['sort_order'] ?? null,
-                        'is_primary' => array_key_exists('is_primary', $img) ? (bool) $img['is_primary'] : null,
-                        'status' => $img['status'] ?? null,
-                    ]);
-                }
+/**
+ * POST /products/images/upload/{productId}
+ * Upload product images separately (store paths/urls, not multipart file yet)
+ */
+public function productImageUpload(Request $request, $productId)
+{
+    try {
+        $product = Product::find($productId);
+        if (!$product) {
+            return $this->failed('Product not found', null, 404);
+        }
+
+        $validated = $request->validate([
+            'images' => ['required', 'array', 'min:1'],
+            'images.*.image' => ['required', 'string', 'max:255'],
+            'images.*.alt_text' => ['nullable', 'string', 'max:255'],
+            'images.*.sort_order' => ['nullable', 'integer'],
+            'images.*.is_primary' => ['nullable', 'boolean'],
+            'images.*.status' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $created = [];
+
+        DB::beginTransaction();
+
+        foreach ($validated['images'] as $img) {
+            if (array_key_exists('is_primary', $img) && (bool) $img['is_primary'] === true) {
+                ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
             }
 
-            $product->load(['images', 'primaryImage']);
-
-            return $this->success('Product created successfully', $product, 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->failed('Validation failed', $e->errors(), 422);
-        } catch (\Throwable $e) {
-            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+            $created[] = ProductImage::create([
+                'product_id' => $product->id,
+                'image' => $img['image'],
+                'alt_text' => $img['alt_text'] ?? null,
+                'sort_order' => $img['sort_order'] ?? null,
+                'is_primary' => array_key_exists('is_primary', $img) ? (bool) $img['is_primary'] : null,
+                'status' => $img['status'] ?? null,
+            ]);
         }
+
+        DB::commit();
+
+        $product->load(['images', 'primaryImage']);
+
+        return $this->success('Product images uploaded successfully', [
+            'product' => $product,
+            'created_images' => $created,
+        ], 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        return $this->failed('Validation failed', $e->errors(), 422);
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
     }
+}
 
     /**
      * GET /products/list
