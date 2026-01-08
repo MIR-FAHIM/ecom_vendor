@@ -111,3 +111,11 @@ Route::prefix('orders')->group(function () {
     // Item status update (for vendor/admin workflows)
     Route::patch('/item/status/{id}', [OrderController::class, 'updateOrderItemStatus']);
 });
+
+Route::prefix('addresses')->group(function () {
+    Route::post('/add', [\App\Http\Controllers\DeliveryAddressController::class, 'addDeliveryAddress']);
+    Route::get('/user/{userId}', [\App\Http\Controllers\DeliveryAddressController::class, 'getAddressByUser']);
+    Route::delete('/delete/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'deleteAddress']);
+    Route::patch('/inactive/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'inactiveAddress']);
+    Route::put('/update/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'updateAddress']);
+});
