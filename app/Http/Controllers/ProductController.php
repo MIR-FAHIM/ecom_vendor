@@ -215,7 +215,7 @@ public function productImageUpload(Request $request, $productId)
                         ->orWhere('slug', 'like', "%{$search}%");
                 });
             }
-
+$query = Product::query()->with(['primaryImage', 'images']);
             $perPage = (int) $request->get('per_page', 20);
             $products = $query->latest()->paginate($perPage);
 
