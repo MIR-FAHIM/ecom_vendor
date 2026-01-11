@@ -20,6 +20,8 @@ Route::prefix('users')->group(function () {
     Route::get('/vendors', [UserController::class, 'getVendors']);
     Route::get('/details/{id}', [UserController::class, 'getUserDetails']);
 
+    Route::get('/number-exists', [UserController::class, 'numberExists']);
+
     Route::put('/update/{id}', [UserController::class, 'updateUser']);
 
     Route::patch('/ban/{id}', [UserController::class, 'banUser']);
