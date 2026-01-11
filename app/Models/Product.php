@@ -44,6 +44,14 @@ class Product extends Model
         'is_active' => 'boolean',
     ];
 
+
+        public function images()
+    {
+        return $this->hasMany(ProductImage::class, 'product_id');
+    }
+
+    // 2) Primary image (one row where is_primary = true)
+
     public function primaryImage()
     {
         // Your model class is ProductImage, table is product_images
