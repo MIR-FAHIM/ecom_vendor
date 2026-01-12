@@ -7,7 +7,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
-
+use App\Http\Controllers\DeliveryAddressController;
+use App\Http\Controllers\WishListController;
+use App\Http\Controllers\BannerController;
 
 
 use Illuminate\Support\Facades\Route;
@@ -113,9 +115,26 @@ Route::prefix('orders')->group(function () {
 });
 
 Route::prefix('addresses')->group(function () {
-    Route::post('/add', [\App\Http\Controllers\DeliveryAddressController::class, 'addDeliveryAddress']);
-    Route::get('/user/{userId}', [\App\Http\Controllers\DeliveryAddressController::class, 'getAddressByUser']);
-    Route::delete('/delete/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'deleteAddress']);
-    Route::patch('/inactive/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'inactiveAddress']);
-    Route::put('/update/{id}', [\App\Http\Controllers\DeliveryAddressController::class, 'updateAddress']);
+    Route::post('/add', [DeliveryAddressController::class, 'addDeliveryAddress']);
+    Route::get('/user/{userId}', [DeliveryAddressController::class, 'getAddressByUser']);
+    Route::delete('/delete/{id}', [DeliveryAddressController::class, 'deleteAddress']);
+    Route::patch('/inactive/{id}', [DeliveryAddressController::class, 'inactiveAddress']);
+    Route::put('/update/{id}', [DeliveryAddressController::class, 'updateAddress']);
 });
+
+
+// Wishlist endpoints
+Route::prefix('wishlists')->group(function () {
+    Route::post('/add', [WishListController::class, 'addWishProduct']);
+    Route::get('/list/{userId}', [WishListController::class, 'getWishList']);
+    Route::delete('/delete/{id}', [WishListController::class, 'deleteWishedProduct']);
+});
+
+
+// Banner endpoints
+Route::prefix('banners')->group(function () {
+    Route::post('/add', [BannerController::class, 'addBanner']);
+    Route::get('/active', [BannerController::class, 'getActiveBanner']);
+    Route::delete('/remove/{id}', [BannerController::class, 'removeBanner']);
+});
+
