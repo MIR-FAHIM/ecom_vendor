@@ -185,8 +185,48 @@ public function allOrders(Request $request)
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
-    }         
+    }
 
+    /**
+     * GET /orders/completed
+     * List all completed orders (admin)
+     */
+    public function completedOrders(Request $request)
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 20);
+
+            $orders = Order::where('status', 'completed')
+                ->with(['items', 'user'])
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('Completed orders fetched successfully', $orders);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /orders/completed/{userId}
+     * List completed orders for a specific user
+     */
+    public function completedOrdersByUser($userId, Request $request)
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 20);
+
+            $orders = Order::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->with(['items'])
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('User completed orders fetched successfully', $orders);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * GET /orders/details/{id}
