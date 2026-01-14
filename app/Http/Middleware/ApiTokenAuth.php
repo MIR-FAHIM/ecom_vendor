@@ -22,7 +22,9 @@ class ApiTokenAuth
 
         // 2. Hash token
         $tokenHash = hash('sha256', $plainToken);
-
+return response()->json([
+                'message' => 'fdfd'
+            ], 401);
         // 3. Find token
         $apiToken = ApiToken::with('user')
             ->where('token_hash', $tokenHash)
