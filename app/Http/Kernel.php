@@ -48,9 +48,9 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-           'auth' => Authenticate::class,
+        'auth' => Authenticate::class,
    //     'auth' => \App\Http\Middleware\Authenticate::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'api_token' => \App\Http\Middleware\ApiTokenAuth::class,
+        'api_token' => ApiTokenAuth::class,
     ];
 }
