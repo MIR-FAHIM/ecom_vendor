@@ -12,21 +12,28 @@ use App\Http\Controllers\WishListController;
 use App\Http\Controllers\BannerController;
 use App\Http\Controllers\AttributeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+
+// Authentication endpoints
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('api_token');
+Route::get('/auth/tokens', [AuthController::class, 'listTokens'])->middleware('api_token');
+Route::delete('/auth/tokens/{id}', [AuthController::class, 'revokeToken'])->middleware('api_token');
 
 Route::prefix('users')->group(function () {
     Route::post('/create', [UserController::class, 'createUser']);
 
-    Route::get('/list', [UserController::class, 'listUsers']);
-    Route::get('/customers', [UserController::class, 'getCustomers']);
-    Route::get('/vendors', [UserController::class, 'getVendors']);
-    Route::get('/details/{id}', [UserController::class, 'getUserDetails']);
+    Route::get('/list', [UserController::class, 'listUsers'])->middleware('api_token');
+    Route::get('/customers', [UserController::class, 'getCustomers'])->middleware('api_token');
+    Route::get('/vendors', [UserController::class, 'getVendors'])->middleware('api_token');
+    Route::get('/details/{id}', [UserController::class, 'getUserDetails'])->middleware('api_token');
 
-    Route::put('/update/{id}', [UserController::class, 'updateUser']);
+    Route::put('/update/{id}', [UserController::class, 'updateUser'])->middleware('api_token');
 
-    Route::patch('/ban/{id}', [UserController::class, 'banUser']);
-    Route::patch('/unban/{id}', [UserController::class, 'unbanUser']);
+    Route::patch('/ban/{id}', [UserController::class, 'banUser'])->middleware('api_token');
+    Route::patch('/unban/{id}', [UserController::class, 'unbanUser'])->middleware('api_token');
 
-    Route::delete('/delete/{id}', [UserController::class, 'deleteUser']);
+    Route::delete('/delete/{id}', [UserController::class, 'deleteUser'])->middleware('api_token');
 });
 
 Route::prefix('categories')->group(function () {

@@ -82,4 +82,10 @@ class User extends Authenticatable
     {
         return ucfirst($value); // Capitalize status (active/inactive)
     }
+
+
+    public function apiTokens()
+    {
+        return $this->hasMany(ApiToken::class);
+    }
 }
