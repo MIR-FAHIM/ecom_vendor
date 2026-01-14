@@ -3,6 +3,9 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Auth\Middleware\Authenticate;
+use App\Http\Middleware\ApiTokenAuth;
+
 
 class Kernel extends HttpKernel
 {
@@ -33,6 +36,7 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ApiTokenAuth::class,
         ],
     ];
 
@@ -44,6 +48,7 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
+           'auth' => Authenticate::class,
    //     'auth' => \App\Http\Middleware\Authenticate::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'api_token' => \App\Http\Middleware\ApiTokenAuth::class,
