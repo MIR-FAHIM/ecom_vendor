@@ -6,14 +6,17 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\ApiToken;
+use Illuminate\Support\Facades\Log;
+
 
 class ApiTokenAuth
 {
     public function handle(Request $request, Closure $next, $scope = null)
     {
-        return response()->json([
-                'message' => 'fdfd'
-            ], 401);
+        Log::info('Middleware HIT', [
+            'uri' => $request->getUri(),
+            'bearer' => $request->bearerToken()
+        ]);
         // 1. Read Bearer token
         $plainToken = $request->bearerToken();
 
@@ -32,7 +35,7 @@ class ApiTokenAuth
             ->where('is_revoked', false)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             })
             ->first();
 
