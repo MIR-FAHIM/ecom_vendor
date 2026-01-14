@@ -24,7 +24,7 @@ Route::prefix('users')->group(function () {
     Route::post('/create', [UserController::class, 'createUser']);
 
     Route::get('/list', [UserController::class, 'listUsers'])->middleware('api_token');
-    Route::get('/customers', [UserController::class, 'getCustomers'])->middleware('api_token');
+    Route::get('/customers', [UserController::class, 'getCustomers']);
     Route::get('/vendors', [UserController::class, 'getVendors'])->middleware('api_token');
     Route::get('/details/{id}', [UserController::class, 'getUserDetails'])->middleware('api_token');
 
