@@ -82,4 +82,9 @@ class Product extends Model
     {
         return $this->belongsTo(Product::class, 'related_id');
     }
+
+    public function productAttributes()
+    {
+        return $this->hasMany(ProductAttribute::class, 'product_id');
+    }
 }

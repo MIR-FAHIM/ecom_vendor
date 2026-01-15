@@ -230,7 +230,12 @@ class ProductController extends Controller
     public function getProductDetails($id)
     {
         try {
-            $product = Product::with(['images', 'primaryImage'])->find($id);
+            $product = Product::with([
+                'images',
+                'primaryImage',
+                'productAttributes.attribute',
+                'productAttributes.value',
+            ])->find($id);
 
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
