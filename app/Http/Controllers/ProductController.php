@@ -235,7 +235,7 @@ class ProductController extends Controller
             $perPage = (int) $request->get('per_page', 20);
             $products = $query->latest()->paginate($perPage);
 
-            return $this->success('Products fetched successfully', $products);
+            return $this->success('Products fetched successfully', $products, 200,);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

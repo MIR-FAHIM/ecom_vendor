@@ -88,6 +88,10 @@ class Product extends Model
     {
         return $this->belongsTo(Upload::class, 'thumbnail_img');
     }
+    public function shop()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function images()
     {
