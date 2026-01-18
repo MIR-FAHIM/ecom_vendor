@@ -99,7 +99,7 @@ class Product extends Model
 
     public function images()
     {
-        return $this->hasMany(Category::class, 'category_id');
+        return $this->hasMany(ProductAttribute::class, 'product_id');
     }
     public function productAttributes()
     {
