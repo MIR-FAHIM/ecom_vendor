@@ -103,6 +103,10 @@ class Product extends Model
     {
         return $this->belongsTo(Brand::class, 'brand_id');
     }
+public function productDiscount()
+{
+    return $this->hasOne(ProductDiscount::class, 'product_id');
+}
 
     // ✅ Accessor example for full photo URL
     public function getThumbnailUrlAttribute()
