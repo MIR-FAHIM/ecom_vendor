@@ -12,9 +12,7 @@ return new class extends Migration
             $table->id();
 
             // Link token to existing users table
-            $table->foreignId('user_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
+            $table->foreignId('user_id');
 
             // Store ONLY hashed token (never plaintext)
             $table->string('token_hash', 64)->unique();

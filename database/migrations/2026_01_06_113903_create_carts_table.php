@@ -16,9 +16,8 @@ return new class extends Migration
 
             // Ownership
             $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+                ->nullable();
+       
 
             // State
             $table->string('status')->nullable(); 

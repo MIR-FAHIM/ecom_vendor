@@ -16,9 +16,8 @@ return new class extends Migration
 
             // Customer
             $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+                ->nullable();
+           
 
             // Public reference
             $table->string('order_number')->nullable()->unique();

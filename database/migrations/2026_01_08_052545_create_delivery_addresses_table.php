@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('name');                  // Recipient name
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // User ID
+            $table->foreignId('user_id'); // User ID
             $table->string('mobile', 20);            // Contact number
 
             $table->string('address');               // Full address line
