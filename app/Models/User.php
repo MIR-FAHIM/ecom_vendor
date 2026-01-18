@@ -4,52 +4,87 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'users';
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
+        'referred_by',
+        'provider',
+        'provider_id',
+        'refresh_token',
+        'access_token',
+        'user_type',
         'name',
         'email',
         'email_verified_at',
+        'verification_code',
+        'new_email_verificiation_code',
         'password',
-        'mobile',
-        'optional_phone',
+        'device_token',
+        'avatar',
+        'avatar_original',
         'address',
-        'fcm_token',
-        'is_banned',
-        'role',
-        'status',
-        'zone',
-        'district',
-        'area',
-        'lat',
-        'lon',
+        'country',
+        'state',
+        'city',
+        'postal_code',
+        'phone',
+        'balance',
+        'banned',
+        'referral_code',
+        'customer_package_id',
+        'remaining_uploads',
     ];
 
     /**
-     * The attributes that should be hidden for arrays / JSON.
+     * Attributes hidden from arrays / JSON.
      */
     protected $hidden = [
         'password',
         'remember_token',
+        'refresh_token',
+        'access_token',
+        'verification_code',
+        'new_email_verificiation_code',
     ];
 
     /**
-     * The attributes that should be cast.
+     * Attribute casting.
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'is_banned' => 'boolean',
-        'lat' => 'decimal:7',
-        'lon' => 'decimal:7',
+        'balance' => 'float',
+        'banned' => 'integer',
+        'remaining_uploads' => 'integer',
+        'customer_package_id' => 'integer',
+        'referred_by' => 'integer',
     ];
 
+    /**
+     * Self reference: who referred this user.
+     */
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    /**
+     * Users referred by this user.
+     */
+    public function referrals()
+    {
+        return $this->hasMany(User::class, 'referred_by');
+    }
     public function apiTokens()
     {
         return $this->hasMany(ApiToken::class);
