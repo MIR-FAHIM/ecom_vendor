@@ -54,7 +54,7 @@ class WishListController extends Controller
     {
         $items = WishList::where('user_id', $userId)
             ->where('status', 1)
-            ->with('product')
+            ->with('product', 'product.productImages', 'product.shop', 'product.category', 'product.subcategory',   'product.brand')
             ->get();
 
         return response()->json([
