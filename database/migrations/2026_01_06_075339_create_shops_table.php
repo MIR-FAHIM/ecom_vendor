@@ -16,10 +16,8 @@ return new class extends Migration
 
             // Owner (user who manages the shop)
             $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
+                ->nullable();
+             
             // Basic shop identity
             $table->string('name')->nullable();
             $table->string('slug')->nullable()->unique();
