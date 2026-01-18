@@ -17,6 +17,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProductDiscountController;
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Controllers\UploadController;
 
 // Authentication endpoints
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -186,5 +187,13 @@ Route::prefix('product-discounts')->group(function () {
     Route::get('/details/{id}', [ProductDiscountController::class, 'details']);
     Route::put('/update/{id}', [ProductDiscountController::class, 'update']);
     Route::delete('/delete/{id}', [ProductDiscountController::class, 'delete']);
+});
+
+// Uploads
+Route::prefix('uploads')->group(function () {
+    Route::post('/image', [UploadController::class, 'uploadImage']);
+    Route::get('/list', [UploadController::class, 'listUploads']);
+    Route::get('/{id}', [UploadController::class, 'getUpload']);
+    Route::delete('/{id}', [UploadController::class, 'deleteUpload']);
 });
 
