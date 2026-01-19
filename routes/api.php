@@ -70,6 +70,7 @@ Route::prefix('products')->group(function () {
 
     Route::get('/list', [ProductController::class, 'listProducts']);
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts']);
+    Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts']);
     Route::get('/details/{id}', [ProductController::class, 'getProductDetails']);
 
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
