@@ -372,6 +372,12 @@ class ProductController extends Controller
                 return $this->failed('Product not found', null, 404);
             }
 
+            // Normalize photos input: accept comma string or single id and convert to array
+            if ($request->filled('photos') && !is_array($request->photos)) {
+                $photosArray = array_filter(array_map('trim', explode(',', (string) $request->photos)));
+                $request->merge(['photos' => $photosArray]);
+            }
+
             $validated = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
                 'added_by' => ['nullable', 'string', 'max:255'],
@@ -379,8 +385,8 @@ class ProductController extends Controller
                 'category_id' => ['nullable', 'integer', 'exists:categories,id'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
 
-                // photos may be an array of upload ids or a comma-separated string
-                'photos' => ['nullable'],
+                // photos are upload ids (array or comma string normalized above)
+                'photos' => ['nullable', 'array'],
                 'photos.*' => ['integer', 'exists:uploads,id'],
                 'thumbnail_img' => ['nullable', 'integer', 'exists:uploads,id'],
 
