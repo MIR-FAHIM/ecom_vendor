@@ -71,7 +71,7 @@ Route::prefix('products')->group(function () {
     Route::get('/list', [ProductController::class, 'listProducts']);
     Route::get('/details/{id}', [ProductController::class, 'getProductDetails']);
 
-    Route::put('/update/{id}', [ProductController::class, 'updateProduct']);
+    Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
 
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
 
