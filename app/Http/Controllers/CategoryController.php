@@ -58,21 +58,14 @@ class CategoryController extends Controller
     public function listCategories(Request $request)
     {
         try {
+            // Only show top-level featured categories
             $query = Category::query()
-                ->with(['banner','children' => function ($q) {
+                ->with(['children' => function ($q) {
                     $q->orderByRaw('COALESCE(order_level, 999999) asc')
                       ->latest();
-                }]);
-
-            // If a specific parent_id is provided, filter by it (0 is top-level)
-            if ($request->filled('parent_id')) {
-                $query->where('parent_id', (int) $request->parent_id);
-            }
-
-            // Default: top-level categories (parent_id === 0) only if nothing provided
-            if (!$request->filled('parent_id') && !$request->filled('all')) {
-                $query->where('parent_id', 0);
-            }
+                }])
+                ->where('parent_id', 0)
+                ->where('featured', 1);
 
             $perPage = (int) $request->get('per_page', 20);
 
