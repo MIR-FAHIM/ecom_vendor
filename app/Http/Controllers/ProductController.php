@@ -37,58 +37,150 @@ class ProductController extends Controller
     {
         try {
             $validated = $request->validate([
-                'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'sub_category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-                'related_id' => ['nullable', 'integer', 'exists:products,id'],
-
                 'name' => ['nullable', 'string', 'max:255'],
-                'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
-                'sku' => ['nullable', 'string', 'max:255', 'unique:products,sku'],
+                'added_by' => ['nullable', 'string', 'max:255'],
+                'user_id' => ['nullable', 'integer', 'exists:users,id'],
+                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
 
-                'short_description' => ['nullable', 'string'],
+                // photos may be an array of upload ids or a comma-separated string
+                'photos' => ['nullable'],
+                'photos.*' => ['integer', 'exists:uploads,id'],
+                'thumbnail_img' => ['nullable', 'integer', 'exists:uploads,id'],
+
+                'video_provider' => ['nullable', 'string', 'max:100'],
+                'video_link' => ['nullable', 'string', 'max:255'],
+                'tags' => ['nullable', 'string', 'max:255'],
                 'description' => ['nullable', 'string'],
 
-                'thumbnail' => ['nullable', 'string', 'max:255'],
+                'unit_price' => ['nullable', 'numeric', 'min:0'],
+                'purchase_price' => ['nullable', 'numeric', 'min:0'],
 
-                'price' => ['nullable', 'numeric', 'min:0'],
-                'sale_price' => ['nullable', 'numeric', 'min:0'],
-                'cost_price' => ['nullable', 'numeric', 'min:0'],
+                'variant_product' => ['nullable', 'boolean'],
+                'attributes' => ['nullable'],
+                'choice_options' => ['nullable'],
+                'colors' => ['nullable'],
+                'variations' => ['nullable'],
 
-                'stock' => ['nullable', 'integer', 'min:0'],
-                'track_stock' => ['nullable', 'boolean'],
-                'is_active' => ['nullable', 'boolean'],
+                'todays_deal' => ['nullable', 'boolean'],
+                'published' => ['nullable', 'boolean'],
+                'approved' => ['nullable', 'boolean'],
+                'stock_visibility_state' => ['nullable', 'string', 'max:50'],
+                'cash_on_delivery' => ['nullable', 'boolean'],
+                'featured' => ['nullable', 'boolean'],
+                'seller_featured' => ['nullable', 'boolean'],
 
-                'status' => ['nullable', 'string', 'max:50'],
+                'current_stock' => ['nullable', 'integer', 'min:0'],
+                'unit' => ['nullable', 'string', 'max:50'],
+                'weight' => ['nullable', 'numeric'],
+                'min_qty' => ['nullable', 'integer'],
+                'low_stock_quantity' => ['nullable', 'integer'],
+
+                'discount' => ['nullable', 'numeric'],
+                'discount_type' => ['nullable', 'string', 'max:20'],
+                'discount_start_date' => ['nullable', 'date'],
+                'discount_end_date' => ['nullable', 'date'],
+
+                'tax' => ['nullable', 'numeric'],
+                'tax_type' => ['nullable', 'string', 'max:20'],
+
+                'shipping_type' => ['nullable', 'string', 'max:50'],
+                'shipping_cost' => ['nullable', 'numeric'],
+
+                'is_quantity_multiplied' => ['nullable', 'boolean'],
+                'est_shipping_days' => ['nullable', 'integer'],
+
+                'meta_title' => ['nullable', 'string', 'max:255'],
+                'meta_description' => ['nullable', 'string', 'max:1000'],
+                'meta_img' => ['nullable', 'string', 'max:255'],
+
+                'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
+                'refundable' => ['nullable', 'boolean'],
+                'earn_point' => ['nullable', 'integer'],
+                'rating' => ['nullable', 'numeric'],
+                'barcode' => ['nullable', 'string', 'max:255'],
+                'digital' => ['nullable', 'boolean'],
+                'auction_product' => ['nullable', 'boolean'],
+                'file_name' => ['nullable', 'string', 'max:255'],
+                'file_path' => ['nullable', 'string', 'max:255'],
+                'external_link' => ['nullable', 'string', 'max:255'],
+                'external_link_btn' => ['nullable', 'string', 'max:255'],
+                'wholesale_product' => ['nullable', 'boolean'],
+                'frequently_brought_selection_type' => ['nullable', 'string', 'max:50'],
             ]);
 
-            $product = Product::create([
-                'shop_id' => $validated['shop_id'] ?? null,
-                'category_id' => $validated['category_id'] ?? null,
-                'sub_category_id' => $validated['sub_category_id'] ?? null,
-                'brand_id' => $validated['brand_id'] ?? null,
-                'related_id' => $validated['related_id'] ?? null,
+            // Normalize photos: accept array of ids or comma string
+            $photos = null;
+            if (array_key_exists('photos', $validated)) {
+                if (is_array($validated['photos'])) {
+                    $photos = implode(',', $validated['photos']);
+                } else {
+                    $photos = (string) $validated['photos'];
+                }
+            }
 
+            $productData = [
                 'name' => $validated['name'] ?? null,
-                'slug' => $validated['slug'] ?? null,
-                'sku' => $validated['sku'] ?? null,
-
-                'short_description' => $validated['short_description'] ?? null,
+                'added_by' => $validated['added_by'] ?? null,
+                'user_id' => $validated['user_id'] ?? null,
+                'category_id' => $validated['category_id'] ?? null,
+                'brand_id' => $validated['brand_id'] ?? null,
+                'photos' => $photos,
+                'thumbnail_img' => $validated['thumbnail_img'] ?? null,
+                'video_provider' => $validated['video_provider'] ?? null,
+                'video_link' => $validated['video_link'] ?? null,
+                'tags' => $validated['tags'] ?? null,
                 'description' => $validated['description'] ?? null,
+                'unit_price' => $validated['unit_price'] ?? null,
+                'purchase_price' => $validated['purchase_price'] ?? null,
+                'variant_product' => array_key_exists('variant_product', $validated) ? (bool) $validated['variant_product'] : null,
+                'attributes' => $validated['attributes'] ?? null,
+                'choice_options' => $validated['choice_options'] ?? null,
+                'colors' => $validated['colors'] ?? null,
+                'variations' => $validated['variations'] ?? null,
+                'todays_deal' => array_key_exists('todays_deal', $validated) ? (bool) $validated['todays_deal'] : null,
+                'published' => array_key_exists('published', $validated) ? (bool) $validated['published'] : null,
+                'approved' => array_key_exists('approved', $validated) ? (bool) $validated['approved'] : null,
+                'stock_visibility_state' => $validated['stock_visibility_state'] ?? null,
+                'cash_on_delivery' => array_key_exists('cash_on_delivery', $validated) ? (bool) $validated['cash_on_delivery'] : null,
+                'featured' => array_key_exists('featured', $validated) ? (bool) $validated['featured'] : null,
+                'seller_featured' => array_key_exists('seller_featured', $validated) ? (bool) $validated['seller_featured'] : null,
+                'current_stock' => $validated['current_stock'] ?? null,
+                'unit' => $validated['unit'] ?? null,
+                'weight' => $validated['weight'] ?? null,
+                'min_qty' => $validated['min_qty'] ?? null,
+                'low_stock_quantity' => $validated['low_stock_quantity'] ?? null,
+                'discount' => $validated['discount'] ?? null,
+                'discount_type' => $validated['discount_type'] ?? null,
+                'discount_start_date' => $validated['discount_start_date'] ?? null,
+                'discount_end_date' => $validated['discount_end_date'] ?? null,
+                'tax' => $validated['tax'] ?? null,
+                'tax_type' => $validated['tax_type'] ?? null,
+                'shipping_type' => $validated['shipping_type'] ?? null,
+                'shipping_cost' => $validated['shipping_cost'] ?? null,
+                'is_quantity_multiplied' => array_key_exists('is_quantity_multiplied', $validated) ? (bool) $validated['is_quantity_multiplied'] : null,
+                'est_shipping_days' => $validated['est_shipping_days'] ?? null,
+                'num_of_sale' => $validated['num_of_sale'] ?? null,
+                'meta_title' => $validated['meta_title'] ?? null,
+                'meta_description' => $validated['meta_description'] ?? null,
+                'meta_img' => $validated['meta_img'] ?? null,
+                'pdf' => $validated['pdf'] ?? null,
+                'slug' => $validated['slug'] ?? null,
+                'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : null,
+                'earn_point' => $validated['earn_point'] ?? null,
+                'rating' => $validated['rating'] ?? null,
+                'barcode' => $validated['barcode'] ?? null,
+                'digital' => array_key_exists('digital', $validated) ? (bool) $validated['digital'] : null,
+                'auction_product' => array_key_exists('auction_product', $validated) ? (bool) $validated['auction_product'] : null,
+                'file_name' => $validated['file_name'] ?? null,
+                'file_path' => $validated['file_path'] ?? null,
+                'external_link' => $validated['external_link'] ?? null,
+                'external_link_btn' => $validated['external_link_btn'] ?? null,
+                'wholesale_product' => array_key_exists('wholesale_product', $validated) ? (bool) $validated['wholesale_product'] : null,
+                'frequently_brought_selection_type' => $validated['frequently_brought_selection_type'] ?? null,
+            ];
 
-                'thumbnail' => $validated['thumbnail'] ?? null,
-
-                'price' => $validated['price'] ?? null,
-                'sale_price' => $validated['sale_price'] ?? null,
-                'cost_price' => $validated['cost_price'] ?? null,
-
-                'stock' => $validated['stock'] ?? null,
-                'track_stock' => array_key_exists('track_stock', $validated) ? (bool) $validated['track_stock'] : null,
-                'is_active' => array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : null,
-
-                'status' => $validated['status'] ?? null,
-            ]);
+            $product = Product::create($productData);
 
             return $this->success('Product created successfully', $product, 201);
         } catch (ValidationException $e) {
