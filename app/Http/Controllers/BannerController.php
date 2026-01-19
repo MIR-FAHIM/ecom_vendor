@@ -37,28 +37,19 @@ class BannerController extends Controller
                 'title' => ['nullable', 'string', 'max:255'],
                 'related_product_id' => ['nullable', 'integer', 'exists:products,id'],
                 'related_category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                // Accept either an uploaded file (`image`) or a direct `image_path` string
-                'image' => ['nullable', 'image', 'max:2048'], // max 2MB
-                'image_path' => ['required_without:image', 'nullable', 'string', 'max:255'],
+                // Use an existing uploaded image by `image_id` (no file upload here)
+                'image_id' => ['required_without:image_path', 'nullable', 'integer', 'exists:uploads,id'],
+                'image_path' => ['nullable', 'string', 'max:255'],
                 'note' => ['nullable', 'string'],
                 'is_active' => ['nullable', 'boolean'],
             ]);
-
-            // Handle file upload if provided, otherwise use provided image_path
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('banners', 'public');
-                $imagePath = $path; // e.g. /storage/banners/...
-            } else {
-                $imagePath = $validated['image_path'] ?? null;
-            }
-
             $banner = Banner::create([
                 'banner_name' => $validated['banner_name'],
                 'title' => $validated['title'] ?? null,
                 'related_product_id' => $validated['related_product_id'] ?? null,
                 'related_category_id' => $validated['related_category_id'] ?? null,
-                'image_path' => $imagePath,
+                'image_path' => $validated['image_path'] ?? null,
+                'image_id' => $validated['image_id'] ?? null,
                 'note' => $validated['note'] ?? null,
                 'is_active' => array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : true,
             ]);
