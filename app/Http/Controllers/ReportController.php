@@ -39,7 +39,8 @@ class ReportController extends Controller
         try {
             $productsCount = Product::count();
             $shopsCount = Shops::count();
-            $customersCount = User::where('role', 'customer')->count();
+            // Users use `user_type` (default 'customer') in the users table
+            $customersCount = User::where('user_type', 'customer')->count();
 
             $ordersCount = Order::count();
             $activeCarts = Cart::where('status', 'active')->count();
@@ -47,8 +48,8 @@ class ReportController extends Controller
             // Sales sums (only consider paid orders)
             $totalSell = (float) Order::where('payment_status', 'paid')->sum('total');
 
-            $today = Carbon::today();
-            $yesterday = Carbon::yesterday();
+            $today = Carbon::today()->toDateString();
+            $yesterday = Carbon::yesterday()->toDateString();
 
             $todaySell = (float) Order::where('payment_status', 'paid')
                 ->whereDate('created_at', $today)
@@ -58,7 +59,7 @@ class ReportController extends Controller
                 ->whereDate('created_at', $yesterday)
                 ->sum('total');
 
-            $last7Start = Carbon::today()->subDays(6); // include today = 7 days
+            $last7Start = Carbon::today()->subDays(6)->toDateString(); // include today = 7 days
             $last7Sell = (float) Order::where('payment_status', 'paid')
                 ->whereDate('created_at', '>=', $last7Start)
                 ->sum('total');
@@ -66,12 +67,12 @@ class ReportController extends Controller
             // Daily breakdown for last 7 days (most recent first)
             $days = [];
             for ($i = 0; $i < 7; $i++) {
-                $d = Carbon::today()->subDays($i);
+                $d = Carbon::today()->subDays($i)->toDateString();
                 $sum = (float) Order::where('payment_status', 'paid')
                     ->whereDate('created_at', $d)
                     ->sum('total');
                 $days[] = [
-                    'date' => $d->toDateString(),
+                    'date' => $d,
                     'total' => $sum,
                 ];
             }
