@@ -371,80 +371,87 @@ class ProductController extends Controller
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
             }
+            // Normalize photos input: accept comma string or single id and convert to array
+            if ($request->filled('photos') && !is_array($request->photos)) {
+                $photosArray = array_filter(array_map('trim', explode(',', (string) $request->photos)));
+                $request->merge(['photos' => $photosArray]);
+            }
 
-            
             $validated = $request->validate([
-                'name' => ['nullable', 'string', 'max:255'],
-                'added_by' => ['nullable', 'string', 'max:255'],
-                'user_id' => ['nullable', 'integer', 'exists:users,id'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+                'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'added_by' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+                'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
+                'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
 
-            
-                'thumbnail_img' => ['nullable', 'integer', 'exists:uploads,id'],
+                'photos' => ['sometimes', 'nullable', 'array'],
+                'photos.*' => ['integer', 'exists:uploads,id'],
+                'thumbnail_img' => ['sometimes', 'nullable', 'integer', 'exists:uploads,id'],
 
-                'video_provider' => ['nullable', 'string', 'max:100'],
-                'video_link' => ['nullable', 'string', 'max:255'],
-                'tags' => ['nullable', 'string', 'max:255'],
-                'description' => ['nullable', 'string'],
+                'video_provider' => ['sometimes', 'nullable', 'string', 'max:100'],
+                'video_link' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'tags' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'description' => ['sometimes', 'nullable', 'string'],
 
-                'unit_price' => ['nullable', 'numeric', 'min:0'],
-                'purchase_price' => ['nullable', 'numeric', 'min:0'],
+                'unit_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+                'purchase_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
-                'variant_product' => ['nullable', 'boolean'],
-                'attributes' => ['nullable'],
-                'choice_options' => ['nullable'],
-                'colors' => ['nullable'],
-                'variations' => ['nullable'],
+                'variant_product' => ['sometimes', 'nullable', 'boolean'],
+                'attributes' => ['sometimes', 'nullable'],
+                'choice_options' => ['sometimes', 'nullable'],
+                'colors' => ['sometimes', 'nullable'],
+                'variations' => ['sometimes', 'nullable'],
 
-                'todays_deal' => ['nullable', 'boolean'],
-                'published' => ['nullable', 'boolean'],
-                'approved' => ['nullable', 'boolean'],
-                'stock_visibility_state' => ['nullable', 'string', 'max:50'],
-                'cash_on_delivery' => ['nullable', 'boolean'],
-                'featured' => ['nullable', 'boolean'],
-                'seller_featured' => ['nullable', 'boolean'],
+                'todays_deal' => ['sometimes', 'nullable', 'boolean'],
+                'published' => ['sometimes', 'nullable', 'boolean'],
+                'approved' => ['sometimes', 'nullable', 'boolean'],
+                'stock_visibility_state' => ['sometimes', 'nullable', 'string', 'max:50'],
+                'cash_on_delivery' => ['sometimes', 'nullable', 'boolean'],
+                'featured' => ['sometimes', 'nullable', 'boolean'],
+                'seller_featured' => ['sometimes', 'nullable', 'boolean'],
 
-                'current_stock' => ['nullable', 'integer', 'min:0'],
-                'unit' => ['nullable', 'string', 'max:50'],
-                'weight' => ['nullable', 'numeric'],
-                'min_qty' => ['nullable', 'integer'],
-                'low_stock_quantity' => ['nullable', 'integer'],
+                'current_stock' => ['sometimes', 'nullable', 'integer', 'min:0'],
+                'unit' => ['sometimes', 'nullable', 'string', 'max:50'],
+                'weight' => ['sometimes', 'nullable', 'numeric'],
+                'min_qty' => ['sometimes', 'nullable', 'integer'],
+                'low_stock_quantity' => ['sometimes', 'nullable', 'integer'],
 
-                'discount' => ['nullable', 'numeric'],
-                'discount_type' => ['nullable', 'string', 'max:20'],
-                'discount_start_date' => ['nullable', 'date'],
-                'discount_end_date' => ['nullable', 'date'],
+                'discount' => ['sometimes', 'nullable', 'numeric'],
+                'discount_type' => ['sometimes', 'nullable', 'string', 'max:20'],
+                'discount_start_date' => ['sometimes', 'nullable', 'date'],
+                'discount_end_date' => ['sometimes', 'nullable', 'date'],
 
-                'tax' => ['nullable', 'numeric'],
-                'tax_type' => ['nullable', 'string', 'max:20'],
+                'tax' => ['sometimes', 'nullable', 'numeric'],
+                'tax_type' => ['sometimes', 'nullable', 'string', 'max:20'],
 
-                'shipping_type' => ['nullable', 'string', 'max:50'],
-                'shipping_cost' => ['nullable', 'numeric'],
+                'shipping_type' => ['sometimes', 'nullable', 'string', 'max:50'],
+                'shipping_cost' => ['sometimes', 'nullable', 'numeric'],
 
-                'is_quantity_multiplied' => ['nullable', 'boolean'],
-                'est_shipping_days' => ['nullable', 'integer'],
+                'is_quantity_multiplied' => ['sometimes', 'nullable', 'boolean'],
+                'est_shipping_days' => ['sometimes', 'nullable', 'integer'],
 
-                'meta_title' => ['nullable', 'string', 'max:255'],
-                'meta_description' => ['nullable', 'string', 'max:1000'],
-                'meta_img' => ['nullable', 'string', 'max:255'],
+                'meta_title' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'meta_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
+                'meta_img' => ['sometimes', 'nullable', 'string', 'max:255'],
 
-                'slug' => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($product->id)],
-                'refundable' => ['nullable', 'boolean'],
-                'earn_point' => ['nullable', 'integer'],
-                'rating' => ['nullable', 'numeric'],
-                'barcode' => ['nullable', 'string', 'max:255'],
-                'digital' => ['nullable', 'boolean'],
-                'auction_product' => ['nullable', 'boolean'],
-                'file_name' => ['nullable', 'string', 'max:255'],
-                'file_path' => ['nullable', 'string', 'max:255'],
-                'external_link' => ['nullable', 'string', 'max:255'],
-                'external_link_btn' => ['nullable', 'string', 'max:255'],
-                'wholesale_product' => ['nullable', 'boolean'],
-                'frequently_brought_selection_type' => ['nullable', 'string', 'max:50'],
+                'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($product->id)],
+                'refundable' => ['sometimes', 'nullable', 'boolean'],
+                'earn_point' => ['sometimes', 'nullable', 'integer'],
+                'rating' => ['sometimes', 'nullable', 'numeric'],
+                'barcode' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'digital' => ['sometimes', 'nullable', 'boolean'],
+                'auction_product' => ['sometimes', 'nullable', 'boolean'],
+                'file_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'file_path' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'external_link' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'external_link_btn' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'wholesale_product' => ['sometimes', 'nullable', 'boolean'],
+                'frequently_brought_selection_type' => ['sometimes', 'nullable', 'string', 'max:50'],
             ]);
 
-            
+            if (array_key_exists('photos', $validated) && is_array($validated['photos'])) {
+                $validated['photos'] = implode(',', $validated['photos']);
+            }
 
             // Normalize boolean flags explicitly when present
             foreach ([
