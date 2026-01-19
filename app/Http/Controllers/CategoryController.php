@@ -58,12 +58,8 @@ class CategoryController extends Controller
     public function listCategories(Request $request)
     {
         try {
-            // Only show top-level featured categories
+            // Only show top-level featured categories (no children)
             $query = Category::query()
-                ->with(['children' => function ($q) {
-                    $q->orderByRaw('COALESCE(order_level, 999999) asc')
-                      ->latest();
-                }])
                 ->where('parent_id', 0)
                 ->where('featured', 1);
 
