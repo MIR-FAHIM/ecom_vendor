@@ -373,31 +373,106 @@ class ProductController extends Controller
             }
 
             $validated = $request->validate([
-                'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'sub_category_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-                'related_id' => ['nullable', 'integer', 'exists:products,id'],
-
                 'name' => ['nullable', 'string', 'max:255'],
-                'slug' => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($product->id)],
-                'sku' => ['nullable', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($product->id)],
+                'added_by' => ['nullable', 'string', 'max:255'],
+                'user_id' => ['nullable', 'integer', 'exists:users,id'],
+                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
 
-                'short_description' => ['nullable', 'string'],
+                // photos may be an array of upload ids or a comma-separated string
+                'photos' => ['nullable'],
+                'photos.*' => ['integer', 'exists:uploads,id'],
+                'thumbnail_img' => ['nullable', 'integer', 'exists:uploads,id'],
+
+                'video_provider' => ['nullable', 'string', 'max:100'],
+                'video_link' => ['nullable', 'string', 'max:255'],
+                'tags' => ['nullable', 'string', 'max:255'],
                 'description' => ['nullable', 'string'],
 
-                'thumbnail' => ['nullable', 'string', 'max:255'],
+                'unit_price' => ['nullable', 'numeric', 'min:0'],
+                'purchase_price' => ['nullable', 'numeric', 'min:0'],
 
-                'price' => ['nullable', 'numeric', 'min:0'],
-                'sale_price' => ['nullable', 'numeric', 'min:0'],
-                'cost_price' => ['nullable', 'numeric', 'min:0'],
+                'variant_product' => ['nullable', 'boolean'],
+                'attributes' => ['nullable'],
+                'choice_options' => ['nullable'],
+                'colors' => ['nullable'],
+                'variations' => ['nullable'],
 
-                'stock' => ['nullable', 'integer', 'min:0'],
-                'track_stock' => ['nullable', 'boolean'],
-                'is_active' => ['nullable', 'boolean'],
+                'todays_deal' => ['nullable', 'boolean'],
+                'published' => ['nullable', 'boolean'],
+                'approved' => ['nullable', 'boolean'],
+                'stock_visibility_state' => ['nullable', 'string', 'max:50'],
+                'cash_on_delivery' => ['nullable', 'boolean'],
+                'featured' => ['nullable', 'boolean'],
+                'seller_featured' => ['nullable', 'boolean'],
 
-                'status' => ['nullable', 'string', 'max:50'],
+                'current_stock' => ['nullable', 'integer', 'min:0'],
+                'unit' => ['nullable', 'string', 'max:50'],
+                'weight' => ['nullable', 'numeric'],
+                'min_qty' => ['nullable', 'integer'],
+                'low_stock_quantity' => ['nullable', 'integer'],
+
+                'discount' => ['nullable', 'numeric'],
+                'discount_type' => ['nullable', 'string', 'max:20'],
+                'discount_start_date' => ['nullable', 'date'],
+                'discount_end_date' => ['nullable', 'date'],
+
+                'tax' => ['nullable', 'numeric'],
+                'tax_type' => ['nullable', 'string', 'max:20'],
+
+                'shipping_type' => ['nullable', 'string', 'max:50'],
+                'shipping_cost' => ['nullable', 'numeric'],
+
+                'is_quantity_multiplied' => ['nullable', 'boolean'],
+                'est_shipping_days' => ['nullable', 'integer'],
+
+                'meta_title' => ['nullable', 'string', 'max:255'],
+                'meta_description' => ['nullable', 'string', 'max:1000'],
+                'meta_img' => ['nullable', 'string', 'max:255'],
+
+                'slug' => ['nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($product->id)],
+                'refundable' => ['nullable', 'boolean'],
+                'earn_point' => ['nullable', 'integer'],
+                'rating' => ['nullable', 'numeric'],
+                'barcode' => ['nullable', 'string', 'max:255'],
+                'digital' => ['nullable', 'boolean'],
+                'auction_product' => ['nullable', 'boolean'],
+                'file_name' => ['nullable', 'string', 'max:255'],
+                'file_path' => ['nullable', 'string', 'max:255'],
+                'external_link' => ['nullable', 'string', 'max:255'],
+                'external_link_btn' => ['nullable', 'string', 'max:255'],
+                'wholesale_product' => ['nullable', 'boolean'],
+                'frequently_brought_selection_type' => ['nullable', 'string', 'max:50'],
             ]);
+
+            // Normalize photos: accept array of ids or comma string
+            if (array_key_exists('photos', $validated)) {
+                if (is_array($validated['photos'])) {
+                    $validated['photos'] = implode(',', $validated['photos']);
+                } else {
+                    $validated['photos'] = (string) $validated['photos'];
+                }
+            }
+
+            // Normalize boolean flags explicitly when present
+            foreach ([
+                'variant_product',
+                'todays_deal',
+                'published',
+                'approved',
+                'cash_on_delivery',
+                'featured',
+                'seller_featured',
+                'is_quantity_multiplied',
+                'refundable',
+                'digital',
+                'auction_product',
+                'wholesale_product',
+            ] as $flag) {
+                if (array_key_exists($flag, $validated)) {
+                    $validated[$flag] = (bool) $validated[$flag];
+                }
+            }
 
             $product->fill($validated);
             $product->save();
