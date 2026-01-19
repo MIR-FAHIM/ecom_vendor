@@ -39,6 +39,10 @@ class Banner extends Model
     {
         return $this->belongsTo(Product::class, 'related_product_id');
     }
+    public function image()
+    {
+        return $this->belongsTo(Upload::class, 'image_id');
+    }
 
     public function category()
     {

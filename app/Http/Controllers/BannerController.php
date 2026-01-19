@@ -78,7 +78,7 @@ class BannerController extends Controller
     {
         try {
             $banners = Banner::where('is_active', 1)
-                ->with(['product', 'category'])
+                ->with(['product', 'category', 'image'])
                 ->latest()
                 ->get();
 
