@@ -437,6 +437,7 @@ class ProductController extends Controller
                 'brand',
                 'category',
                 'subCategory',
+                'averageReview',
                 'shop',
                 'related',
                 'productAttributes.attribute',
