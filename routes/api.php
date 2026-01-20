@@ -18,6 +18,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ProductDiscountController;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\RelatedProductController;
 
 // Authentication endpoints
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -147,6 +148,13 @@ Route::prefix('wishlists')->group(function () {
     Route::post('/add', [WishListController::class, 'addWishProduct']);
     Route::get('/list/{userId}', [WishListController::class, 'getWishList']);
     Route::delete('/delete/{id}', [WishListController::class, 'deleteWishedProduct']);
+});
+
+// Related products endpoints
+Route::prefix('related-products')->group(function () {
+    Route::post('/add', [RelatedProductController::class, 'addRelatedProduct']);
+    Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct']);
+    Route::delete('/remove/{id}', [RelatedProductController::class, 'remove']);
 });
 
 

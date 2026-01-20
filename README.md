@@ -5,11 +5,11 @@ SHOW TABLES;
 DROP TABLE content_images;
 USE database_name;
 DESCRIBE content_images;
-php artisan make:model Category -m  
+php artisan make:model RelatedProduct -m  
 php artisan make:migration UserReview
 php artisan route:list
 php artisan route:clear
-php artisan make:controller UploadController --resource
+php artisan make:controller RelatedProductController --resource
 php artisan make:model DonationProjectImage -m //table and model
 // change a parameter type 
 ALTER TABLE transactions MODIFY COLUMN user_name DOUBLE(10, 2); //INT,VARCHAR(255), DOUBLE
