@@ -19,6 +19,7 @@ use App\Http\Controllers\ProductDiscountController;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\RelatedProductController;
+use App\Http\Controllers\ReviewController;
 
 // Authentication endpoints
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -155,6 +156,16 @@ Route::prefix('related-products')->group(function () {
     Route::post('/add', [RelatedProductController::class, 'addRelatedProduct']);
     Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct']);
     Route::delete('/remove/{id}', [RelatedProductController::class, 'remove']);
+});
+
+// Review endpoints
+Route::prefix('reviews')->group(function () {
+    Route::post('/add', [ReviewController::class, 'addReview']);
+    Route::get('/list', [ReviewController::class, 'getAllReview']);
+    Route::get('/product/{productId}', [ReviewController::class, 'getReviewByProduct']);
+    Route::get('/user/{userId}', [ReviewController::class, 'getReviewByUser']);
+    Route::put('/update-by-user/{id}', [ReviewController::class, 'updateReviewByUser']);
+    Route::delete('/remove/{id}', [ReviewController::class, 'removeReview']);
 });
 
 
