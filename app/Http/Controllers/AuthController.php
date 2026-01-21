@@ -48,12 +48,23 @@ class AuthController extends Controller
                 $user = User::where('email', $validated['email'])->first();
             } elseif (!empty($validated['phone'])) {
                 $rawPhone = trim($validated['phone']);
-                $normalizedPhone = preg_replace('/^\+?88/', '', $rawPhone);
+                $digits = preg_replace('/\D+/', '', $rawPhone);
 
-                $user = User::where(function ($query) use ($rawPhone, $normalizedPhone) {
-                    $query->where('phone', $rawPhone)
-                        ->orWhere('phone', $normalizedPhone);
-                })->first();
+                $local = preg_replace('/^88/', '', $digits);
+                $local = preg_replace('/^0/', '', $local);
+
+                $variants = array_filter(array_unique([
+                    $rawPhone,
+                    $digits,
+                    '+88' . '0' . $local,
+                    '+88' . $local,
+                    '88' . '0' . $local,
+                    '88' . $local,
+                    '0' . $local,
+                    $local,
+                ]));
+
+                $user = User::whereIn('phone', $variants)->first();
             }
 
             if (!$user || !Hash::check($validated['password'], $user->password)) {
