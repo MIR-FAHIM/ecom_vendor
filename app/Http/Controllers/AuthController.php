@@ -35,8 +35,8 @@ class AuthController extends Controller
     {
         try {
             $validated = $request->validate([
-                'email' => ['nullable', 'email', 'required_without:mobile'],
-                'mobile' => ['nullable', 'string', 'required_without:email'],
+                'email' => ['nullable', 'email', 'required_without:phone'],
+                'phone' => ['nullable', 'string', 'required_without:email'],
                 'password' => ['required', 'string', 'min:6'],
                 'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
                 'name' => ['nullable', 'string', 'max:255'],
@@ -46,8 +46,8 @@ class AuthController extends Controller
 
             if (!empty($validated['email'])) {
                 $user = User::where('email', $validated['email'])->first();
-            } elseif (!empty($validated['mobile'])) {
-                $user = User::where('mobile', $validated['mobile'])->first();
+            } elseif (!empty($validated['phone'])) {
+                $user = User::where('phone', $validated['phone'])->first();
             }
 
             if (!$user || !Hash::check($validated['password'], $user->password)) {
