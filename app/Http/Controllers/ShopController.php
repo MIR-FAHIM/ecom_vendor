@@ -57,11 +57,12 @@ class ShopController extends Controller
                 'status' => ['nullable', 'string', 'max:50'], // pending, active, suspended
             ]);
 
-            // Optional: enforce vendor role if user_id is provided
+            // Optional: enforce vendor role if user_id is provided 
+            //delivery_boy, customer, seller, admin
             if (!empty($validated['user_id'])) {
                 $user = User::find($validated['user_id']);
-                if ($user && $user->role !== 'vendor') {
-                    $user->role = 'vendor';
+                if ($user && $user->user_type !== 'seller') {
+                    $user->user_type = 'seller';
                     $user->save();
                 }
             }
