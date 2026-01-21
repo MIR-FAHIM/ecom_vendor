@@ -61,7 +61,8 @@ class ShopController extends Controller
             if (!empty($validated['user_id'])) {
                 $user = User::find($validated['user_id']);
                 if ($user && $user->role !== 'vendor') {
-                    return $this->failed('Only vendor users can own a shop', null, 409);
+                    $user->role = 'vendor';
+                    $user->save();
                 }
             }
 
