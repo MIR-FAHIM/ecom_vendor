@@ -20,6 +20,7 @@ use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\RelatedProductController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\DeliveryController;
 
 // Authentication endpoints
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -69,17 +70,14 @@ Route::prefix('brands')->group(function () {
 
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
-  Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
+    Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
 
     Route::get('/list', [ProductController::class, 'listProducts']);
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts']);
     Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts']);
     Route::get('/details/{id}', [ProductController::class, 'getProductDetails']);
-
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
-
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
-
     // Images
     Route::post('/images/add/{id}', [ProductController::class, 'addProductImage']);
     Route::delete('/images/delete/{imageId}', [ProductController::class, 'deleteProductImage']);
@@ -219,3 +217,7 @@ Route::prefix('uploads')->group(function () {
     Route::delete('/{id}', [UploadController::class, 'deleteUpload']);
 });
 
+Route::prefix('deliveries')->group(function () {
+    Route::post('/assign', [DeliveryController::class, 'assignDeliveryMan']);
+    Route::patch('/unassign', [DeliveryController::class, 'unassignDeliveryMan']);
+});
