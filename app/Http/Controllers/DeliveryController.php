@@ -77,6 +77,8 @@ class DeliveryController extends Controller
                 'note' => $validated['note'] ?? null,
             ]);
 
+            Order::where('id', $validated['order_id'])->update(['status' => 'assigned deliveryman']);
+
             return $this->success('Delivery man assigned successfully', $assignment->load(['deliveryMan', 'order']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
