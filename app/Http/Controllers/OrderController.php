@@ -267,8 +267,8 @@ public function allOrders(Request $request)
 
             if($validated['status'] === 'completed') {
                 // Also update all order items to completed
-                Order::where('order_id', $order->id)
-                    ->update(['payment_status' => 'paid']);
+                $order->payment_status = 'paid';
+                $order->save();
                 OrderItem::where('order_id', $order->id)
                     ->update(['status' => 'completed']);
             }
