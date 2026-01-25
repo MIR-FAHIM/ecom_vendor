@@ -33,6 +33,7 @@ Route::prefix('users')->group(function () {
     Route::get('/list', [UserController::class, 'listUsers']);
     Route::get('/customers', [UserController::class, 'getCustomers']);
     Route::get('/vendors', [UserController::class, 'getVendors']);
+    Route::get('/delivery-men', [UserController::class, 'getDeliveryMan']);
     Route::get('/details/{id}', [UserController::class, 'getUserDetails']);
 
     Route::put('/update/{id}', [UserController::class, 'updateUser']);

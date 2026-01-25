@@ -132,10 +132,21 @@ class UserController extends Controller
     public function getVendors(Request $request)
     {
         try {
-            $perPage = (int) ($request->get('per_page', 20));
-            $vendors = User::where('role', 'vendor')->latest()->paginate($perPage);
+            $perPage = (int) ($request->get('per_page', 50));
+            $vendors = User::where('user_type', 'seller')->latest()->paginate($perPage);
 
             return $this->success('Vendors fetched successfully', $vendors);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+    public function getDeliveryMan(Request $request)
+    {
+        try {
+            $perPage = (int) ($request->get('per_page', 20));
+            $deliveryMen = User::where('user_type', 'delivery_boy')->latest()->paginate($perPage);
+
+            return $this->success('Delivery men fetched successfully', $deliveryMen);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
