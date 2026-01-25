@@ -258,6 +258,10 @@ public function allOrders(Request $request)
                 return $this->failed('Order not found', null, 404);
             }
 
+            if ($order->status === 'completed') {
+                return $this->failed('Order is already completed and cannot be updated', null, 409);
+            }
+
             $validated = $request->validate([
                 'status' => ['required', 'string', 'max:50'],
             ]);
