@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\Transaction;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -275,6 +276,16 @@ public function allOrders(Request $request)
                 $order->save();
                 OrderItem::where('order_id', $order->id)
                     ->update(['status' => 'completed']);
+
+                    Transaction::create([
+                        'amount' => $order->total,
+                        'trx_type' => 'credit',
+                        'status' => 'completed',
+                        'source' => 'cod',
+                        'order_id' => $order->id,
+                        'type' => 'order_payment',
+                        'note' => 'Payment received for order #' . $order->order_number,
+                    ]);
             }
 
             return $this->success('Order status updated successfully', $order);
