@@ -259,7 +259,7 @@ public function allOrders(Request $request)
             }
 
             if ($order->status === 'completed') {
-                return $this->failed('Order is already completed and cannot be updated', null, 409);
+                return $this->failed('Order is already completed and cannot be updated', null);
             }
 
             $validated = $request->validate([
