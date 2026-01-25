@@ -219,5 +219,5 @@ Route::prefix('uploads')->group(function () {
 
 Route::prefix('deliveries')->group(function () {
     Route::post('/assign', [DeliveryController::class, 'assignDeliveryMan']);
-    Route::patch('/unassign', [DeliveryController::class, 'unassignDeliveryMan']);
+    Route::post('/unassign', [DeliveryController::class, 'unassignDeliveryMan']);
 });
