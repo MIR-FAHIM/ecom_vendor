@@ -145,7 +145,7 @@ class ShopController extends Controller
     public function getShopDetails($id)
     {
         try {
-            $shop = Shops::find($id);
+            $shop = Shops::with('logo','banner','user')->find($id);
 
             if (!$shop) {
                 return $this->failed('Shop not found', null, 404);
