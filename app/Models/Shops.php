@@ -42,4 +42,8 @@ class Shops extends Model
     {
         return $this->belongsTo(Upload::class , 'logo' ,);
     }
+    public function banner()
+    {
+        return $this->belongsTo(Upload::class , 'banner' ,);
+    }
 }

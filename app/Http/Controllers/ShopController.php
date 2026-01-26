@@ -131,7 +131,7 @@ class ShopController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 100);
-            $shops = $query->with('logo','user')->paginate($perPage);
+            $shops = $query->with('logo','banner','user')->paginate($perPage);
 
             return $this->success('Shops fetched successfully', $shops);
         } catch (\Throwable $e) {
