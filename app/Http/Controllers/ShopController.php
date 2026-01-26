@@ -251,8 +251,8 @@ class ShopController extends Controller
             // Optional: enforce vendor role if user_id is being updated
             if (array_key_exists('user_id', $validated) && !empty($validated['user_id'])) {
                 $user = User::find($validated['user_id']);
-                if ($user && $user->role !== 'vendor') {
-                    return $this->failed('Only vendor users can own a shop', null, 409);
+                if ($user && $user->role !== 'seller') {
+                    return $this->failed('Only seller users can own a shop', null, 409);
                 }
 
                 // Optional: prevent multiple shops per user
