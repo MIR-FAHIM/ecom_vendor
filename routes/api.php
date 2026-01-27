@@ -225,6 +225,7 @@ Route::prefix('deliveries')->group(function () {
     Route::get('/all/{deliveryManId}', [DeliveryController::class, 'getAllOrderByDeliveryMan']);
     Route::get('/assigned/{deliveryManId}', [DeliveryController::class, 'getAssignedDelivery']);
     Route::get('/completed/{deliveryManId}', [DeliveryController::class, 'getCompletedDelivery']);
+    Route::get('/report/{deliveryManId}', [DeliveryController::class, 'getDeliveryManReport']);
 });
 
 Route::prefix('transactions')->group(function () {
