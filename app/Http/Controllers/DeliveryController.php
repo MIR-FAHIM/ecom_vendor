@@ -286,6 +286,7 @@ public function getDeliveryManReport($deliveryManId)
                 'assigned_order_count' => $assignedCount,
                 'picked_order_count' => $pickedCount,
                 'on_the_way_order_count' => $onTheWayCount,
+                'delivered_order_count' => $deliveredCount,
                 'amount' => [
                     'collected_amount' => 1200, // demo
                     'earnings' => 180,          // demo
