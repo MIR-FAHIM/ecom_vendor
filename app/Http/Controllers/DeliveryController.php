@@ -255,10 +255,37 @@ public function getDeliveryManReport($deliveryManId)
                     $q->whereNotIn('status', ['delivered', 'completed']);
                 })
                 ->count();
+            $deliveredCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'delivered');
+                })
+                ->count();
+            $assignedCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'assigned');
+                })
+                ->count();
+            $pickedCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'picked');
+                })
+                ->count();
+            $onTheWayCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'on the way');
+                })
+                ->count();
 
             $data = [
                 'completed_order_count' => $completedCount,
                 'pending_order_count' => $pendingCount,
+                'assigned_order_count' => $assignedCount,
+                'picked_order_count' => $pickedCount,
+                'on_the_way_order_count' => $onTheWayCount,
                 'amount' => [
                     'collected_amount' => 1200, // demo
                     'earnings' => 180,          // demo
