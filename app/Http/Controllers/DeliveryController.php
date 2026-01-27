@@ -180,6 +180,31 @@ class DeliveryController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+    public function getDeliveredDelivery($deliveryManId, Request $request)
+    {
+        try {
+            $deliveryMan = User::find($deliveryManId);
+            if (!$deliveryMan || $deliveryMan->user_type !== 'delivery_boy') {
+                return $this->failed('User is not a delivery man', null, 422);
+            }
+
+            $perPage = (int) $request->get('per_page', 20);
+
+            $assignments = AssignDeliveryMan::with(['order', 'deliveryMan'])
+                ->where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+               
+                 ->whereHas('order', function ($q) {
+        $q->where('status', 'delivered');
+    })
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('Assigned deliveries fetched successfully', $assignments);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * GET /deliveries/completed/{deliveryManId}?per_page=20

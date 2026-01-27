@@ -223,6 +223,7 @@ Route::prefix('deliveries')->group(function () {
     Route::post('/assign', [DeliveryController::class, 'assignDeliveryMan']);
     Route::post('/unassign', [DeliveryController::class, 'unassignDeliveryMan']);
     Route::get('/all/{deliveryManId}', [DeliveryController::class, 'getAllOrderByDeliveryMan']);
+    Route::get('/delivered/{deliveryManId}', [DeliveryController::class, 'getAssignedDelivery']);
     Route::get('/assigned/{deliveryManId}', [DeliveryController::class, 'getAssignedDelivery']);
     Route::get('/completed/{deliveryManId}', [DeliveryController::class, 'getCompletedDelivery']);
     Route::get('/report/{deliveryManId}', [DeliveryController::class, 'getDeliveryManReport']);
