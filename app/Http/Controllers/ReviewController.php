@@ -8,6 +8,26 @@ use Illuminate\Http\Response;
 
 class ReviewController extends Controller
 {
+
+
+    private function success($message, $data = null, int $code = 200)
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => $message,
+            'data' => $data,
+        ], $code);
+    }
+
+    private function failed($message, $errors = null, int $code = 400)
+    {
+        return response()->json([
+            'status' => 'failed',
+            'message' => $message,
+            'errors' => $errors
+        ], $code);
+    }
+
     /**
      * Add a new review
      */
@@ -33,10 +53,7 @@ class ReviewController extends Controller
             'type' => $data['type'] ?? null,
         ]);
 
-        return response()->json([
-            'message' => 'Review added successfully',
-            'review' => $review->load('user', 'product')
-        ], Response::HTTP_CREATED);
+       return $this->success('Review created successfully', $review, 201);
     }
 
     /**
@@ -52,10 +69,10 @@ class ReviewController extends Controller
 
         $items = $query->latest()->get();
 
-        return response()->json([
+        return $this->success('Reviews retrieved successfully', [
             'count' => $items->count(),
             'items' => $items
-        ], Response::HTTP_OK);
+        ]);
     }
 
     /**
@@ -69,10 +86,10 @@ class ReviewController extends Controller
             ->latest()
             ->get();
 
-        return response()->json([
+       return $this->success('Reviews retrieved successfully', [
             'count' => $items->count(),
             'items' => $items
-        ], Response::HTTP_OK);
+        ]);
     }
 
     /**
@@ -86,10 +103,10 @@ class ReviewController extends Controller
             ->latest()
             ->get();
 
-        return response()->json([
+       return $this->success('Reviews retrieved successfully', [
             'count' => $items->count(),
             'items' => $items
-        ], Response::HTTP_OK);
+        ]);
     }
 
     /**
@@ -100,7 +117,7 @@ class ReviewController extends Controller
         $review = Review::find($id);
 
         if (! $review) {
-            return response()->json(['message' => 'Review not found.'], Response::HTTP_NOT_FOUND);
+            return $this->failed('Review not found.', null, 404);
         }
 
         $data = $request->validate([
@@ -113,7 +130,7 @@ class ReviewController extends Controller
         ]);
 
         if ((int) $review->user_id !== (int) $data['user_id']) {
-            return response()->json(['message' => 'You are not allowed to update this review.'], Response::HTTP_FORBIDDEN);
+            return $this->failed('You are not allowed to update this review.', null, 403);
         }
 
         if (array_key_exists('comment', $data)) {
@@ -134,10 +151,7 @@ class ReviewController extends Controller
 
         $review->save();
 
-        return response()->json([
-            'message' => 'Review updated successfully',
-            'review' => $review->load('user', 'product')
-        ], Response::HTTP_OK);
+        return $this->success('Review updated successfully', $review->load('user', 'product'));
     }
 
     /**
@@ -148,12 +162,12 @@ class ReviewController extends Controller
         $review = Review::find($id);
 
         if (! $review) {
-            return response()->json(['message' => 'Review not found.'], Response::HTTP_NOT_FOUND);
+            return $this->failed('Review not found.', null, 404);
         }
 
         $review->status = false;
         $review->save();
 
-        return response()->json(['message' => 'Review removed successfully.'], Response::HTTP_OK);
+        return $this->success('Review removed successfully', $review->load('user', 'product'));
     }
 }
