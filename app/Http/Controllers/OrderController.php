@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\OrderItem;
+use App\Models\ShippingCost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -81,8 +82,9 @@ class OrderController extends Controller
                 $subtotal += (float) ($ci->line_total ?? 0);
             }
 
-            // For now: shipping_fee & discount are kept null (or 0) until you add those modules
-            $shippingFee = 0;
+            // Use global shipping cost (first record)
+            $shippingSetting = ShippingCost::first();
+            $shippingFee = $shippingSetting ? (float) ($shippingSetting->shipping_cost ?? 0) : 0;
             $discount = 0;
             $total = round(($subtotal + $shippingFee) - $discount, 2);
 
