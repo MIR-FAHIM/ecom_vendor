@@ -22,6 +22,7 @@ use App\Http\Controllers\RelatedProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WebsiteSettingController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -234,4 +235,11 @@ Route::prefix('transactions')->group(function () {
     Route::get('/credit', [TransactionController::class, 'creditTransaction']);
     Route::get('/debit', [TransactionController::class, 'debitTransaction']);
     Route::get('/report', [TransactionController::class, 'transactionReport']);
+});
+
+Route::prefix('website-settings')->group(function () {
+    Route::post('/logo', [WebsiteSettingController::class, 'addWebsiteLogo']);
+    Route::post('/add', [WebsiteSettingController::class, 'addWebsiteSetting']);
+    Route::get('/logo', [WebsiteSettingController::class, 'getLogo']);
+    Route::get('/', [WebsiteSettingController::class, 'getWebsiteSetting']);
 });
