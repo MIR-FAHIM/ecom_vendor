@@ -23,7 +23,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\TransactionController;
 
-// Authentication endpoints
+// Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 Route::get('/auth/tokens', [AuthController::class, 'listTokens']);
