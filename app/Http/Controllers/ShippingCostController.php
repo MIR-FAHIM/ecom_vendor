@@ -69,7 +69,7 @@ class ShippingCostController extends Controller
     public function getShippingCost()
     {
         try {
-            $shippingCost = ShippingCost::first();
+            $shippingCost = ShippingCost::get();
 
             if (!$shippingCost) {
                 return $this->failed('Shipping cost not found', null, 404);
