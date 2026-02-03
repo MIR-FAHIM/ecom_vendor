@@ -168,8 +168,34 @@ class DeliveryController extends Controller
             $assignments = AssignDeliveryMan::with(['order', 'deliveryMan'])
                 ->where('delivery_man_id', $deliveryManId)
                 ->where('status', 'assigned')
+               
                  ->whereHas('order', function ($q) {
         $q->whereNotIn('status', ['delivered', 'completed']);
+    })
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('Assigned deliveries fetched successfully', $assignments);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+    public function getDeliveredDelivery($deliveryManId, Request $request)
+    {
+        try {
+            $deliveryMan = User::find($deliveryManId);
+            if (!$deliveryMan || $deliveryMan->user_type !== 'delivery_boy') {
+                return $this->failed('User is not a delivery man', null, 422);
+            }
+
+            $perPage = (int) $request->get('per_page', 20);
+
+            $assignments = AssignDeliveryMan::with(['order', 'deliveryMan'])
+                ->where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+               
+                 ->whereHas('order', function ($q) {
+        $q->where('status', 'delivered');
     })
                 ->latest()
                 ->paginate($perPage);
@@ -208,6 +234,70 @@ class DeliveryController extends Controller
         }
     }
 
+public function getDeliveryManReport($deliveryManId)
+    {
+        try {
+            $deliveryMan = User::find($deliveryManId);
+            if (!$deliveryMan || $deliveryMan->user_type !== 'delivery_boy') {
+                return $this->failed('User is not a delivery man', null, 422);
+            }
 
+            $completedCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                ->whereHas('order', function ($q) {
+                    $q->where('status', 'completed');
+                })
+                ->count();
+
+            $pendingCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                ->whereHas('order', function ($q) {
+                    $q->whereNotIn('status', ['delivered', 'completed']);
+                })
+                ->count();
+            $deliveredCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'delivered');
+                })
+                ->count();
+            $assignedCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'assigned');
+                })
+                ->count();
+            $pickedCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'picked');
+                })
+                ->count();
+            $onTheWayCount = AssignDeliveryMan::where('delivery_man_id', $deliveryManId)
+                ->where('status', 'assigned')
+                 ->whereHas('order', function ($q) {
+                    $q->where('status', 'on the way');
+                })
+                ->count();
+
+            $data = [
+                'completed_order_count' => $completedCount,
+                'pending_order_count' => $pendingCount,
+                'assigned_order_count' => $assignedCount,
+                'picked_order_count' => $pickedCount,
+                'on_the_way_order_count' => $onTheWayCount,
+                'delivered_order_count' => $deliveredCount,
+                'cenceled_count' => 0,
+                'amount' => [
+                    'collected_amount' => 1200, // demo
+                    'earnings' => 180,          // demo
+                ],
+            ];
+
+            return $this->success('Delivery man report fetched successfully', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
     
 }
