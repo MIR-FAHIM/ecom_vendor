@@ -23,6 +23,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WebsiteSettingController;
+use App\Http\Controllers\ShippingCostController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -242,4 +243,8 @@ Route::prefix('website-settings')->group(function () {
     Route::post('/add', [WebsiteSettingController::class, 'addWebsiteSetting']);
     Route::get('/logo', [WebsiteSettingController::class, 'getLogo']);
     Route::get('/website', [WebsiteSettingController::class, 'getWebsiteSetting']);
+});
+Route::prefix('shipping-costs')->group(function () {
+    Route::post('/set', [ShippingCostController::class, 'setShippingCost']);
+    Route::get('/get', [ShippingCostController::class, 'getShippingCost']);
 });
