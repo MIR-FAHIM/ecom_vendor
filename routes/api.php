@@ -241,5 +241,5 @@ Route::prefix('website-settings')->group(function () {
     Route::post('/logo', [WebsiteSettingController::class, 'addWebsiteLogo']);
     Route::post('/add', [WebsiteSettingController::class, 'addWebsiteSetting']);
     Route::get('/logo', [WebsiteSettingController::class, 'getLogo']);
-    Route::get('/', [WebsiteSettingController::class, 'getWebsiteSetting']);
+    Route::get('/website', [WebsiteSettingController::class, 'getWebsiteSetting']);
 });
