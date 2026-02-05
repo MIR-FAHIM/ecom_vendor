@@ -37,7 +37,7 @@ return [
 
     'muthobarta' => [
         'base_url' => env('MUTHOBARTA_BASE_URL', 'https://sysadmin.muthobarta.com/api/v1'),
-        'api_key' => env('MUTHOBARTA_API_KEY','Token 59ab62e2286088aeefe0d0ccd35c9dc34af3179e' ),
+        'api_key' => env('MUTHOBARTA_API_KEY','Token e76076c94b87ad21028fd2c13f931f727c6e5e24' ),
     ],
 
 ];
