@@ -41,11 +41,11 @@ class DeliveryAddress extends Model
 
     public function district()
     {
-        return $this->belongsTo(District::class, 'district', 'name');
+        return $this->belongsTo(District::class, 'district', 'id');
     }
 
     public function division()
     {
-        return $this->belongsTo(Division::class, 'division', 'name');
+        return $this->belongsTo(Division::class, 'division', 'id');
     }
 }
