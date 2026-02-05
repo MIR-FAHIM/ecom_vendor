@@ -159,7 +159,7 @@ class AuthController extends Controller
             $user = User::whereIn('phone', $variants)->first();
 
             if (!$user) {
-                return $this->failed('User not found', null, 403);
+                return $this->failed('User not found',);
             }
 
             $otpRecord->update([
