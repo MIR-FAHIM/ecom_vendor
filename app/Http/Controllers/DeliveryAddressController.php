@@ -49,7 +49,7 @@ class DeliveryAddressController extends Controller
     public function getAddressByUser($userId)
     {
         try {
-            $addresses = DeliveryAddress::where('user_id', $userId)->get();
+            $addresses = DeliveryAddress::where('user_id', $userId)->with(['district', 'division'])->get();
 
             return $this->success('Addresses retrieved', $addresses);
         } catch (\Exception $e) {

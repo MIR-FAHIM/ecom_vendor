@@ -38,4 +38,14 @@ class DeliveryAddress extends Model
         'lat'    => 'float',
         'lon'    => 'float',
     ];
+
+    public function district()
+    {
+        return $this->belongsTo(District::class, 'district', 'name');
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class, 'division', 'name');
+    }
 }
