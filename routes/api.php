@@ -257,6 +257,6 @@ Route::prefix('shipping-costs')->group(function () {
 });
 
 Route::prefix('sms')->group(function () {
-    Route::post('/send', [SMSController::class, 'sendSms']);
-    Route::post('/verify', [SMSController::class, 'verifyOtp']);
+    Route::post('/send', [SMSController::class, 'sendSms'])->withoutMiddleware('token');;
+    Route::post('/verify', [SMSController::class, 'verifyOtp'])->withoutMiddleware('token');;
 });
