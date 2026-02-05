@@ -28,6 +28,7 @@ use App\Http\Controllers\SMSController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
+Route::post('/auth/login-otp', [AuthController::class, 'loginWithOtp'])->withoutMiddleware('token');
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 Route::get('/auth/tokens', [AuthController::class, 'listTokens']);
 Route::delete('/auth/tokens/{id}', [AuthController::class, 'revokeToken']);

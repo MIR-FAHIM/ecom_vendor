@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\ApiToken;
+use App\Models\OTPSms;
 use App\Service\ApiTokenService;
+use Illuminate\Support\Carbon;
 
 class AuthController extends Controller
 {
@@ -94,6 +96,102 @@ class AuthController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * POST /auth/login-otp
+     */
+    public function loginWithOtp(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'mobile_number' => ['required', 'string', 'max:20'],
+                'otp' => ['required', 'string', 'max:10'],
+                'type' => ['nullable', 'string', 'max:50'],
+                'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+                'name' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            $query = OTPSms::where('mobile_number', $validated['mobile_number'])
+                ->where('otp', $validated['otp'])
+                ->where('is_expired', false)
+                ->where('status', true);
+
+            if (!empty($validated['type'])) {
+                $query->where('type', $validated['type']);
+            }
+
+            $otpRecord = $query->latest()->first();
+
+            if (!$otpRecord) {
+                return $this->failed('Invalid OTP', null, 400);
+            }
+
+            $expiresAt = $otpRecord->created_at
+                ? Carbon::parse($otpRecord->created_at)->addMinutes($otpRecord->validity_time)
+                : Carbon::now()->subMinute();
+
+            if (Carbon::now()->greaterThan($expiresAt)) {
+                $otpRecord->update([
+                    'is_expired' => true,
+                    'status' => false,
+                ]);
+
+                return $this->failed('OTP expired', null, 400);
+            }
+
+            $rawPhone = trim($validated['mobile_number']);
+            $digits = preg_replace('/\D+/', '', $rawPhone);
+
+            $local = preg_replace('/^88/', '', $digits);
+            $local = preg_replace('/^0/', '', $local);
+
+            $variants = array_filter(array_unique([
+                $rawPhone,
+                $digits,
+                '+88' . '0' . $local,
+                '+88' . $local,
+                '88' . '0' . $local,
+                '88' . $local,
+                '0' . $local,
+                $local,
+            ]));
+
+            $user = User::whereIn('phone', $variants)->first();
+
+            if (!$user) {
+                return $this->failed('User not found', null, 404);
+            }
+
+            $otpRecord->update([
+                'is_expired' => true,
+                'status' => false,
+            ]);
+
+            $scopes = ['basic'];
+            if ($user->role === 'admin') {
+                $scopes[] = 'admin';
+            }
+
+            $days = $validated['expires_in_days'] ?? 30;
+            $name = $validated['name'] ?? 'otp-login-token';
+
+            $created = ApiTokenService::create($user, $scopes, $days, $name);
+
+            return $this->success('Login successful', [
+                'token' => $created['plain'],
+                'token_type' => 'Bearer',
+                'expires_at' => $created['token']->expires_at,
+                'token_id' => $created['token']->id,
+                'user' => $user,
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->failed('Validation failed', $e->errors(), 422);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    
 
     /**
      * POST /auth/logout

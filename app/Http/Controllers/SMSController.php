@@ -16,7 +16,7 @@ class SMSController extends Controller
 	public function sendSms(Request $request)
 	{
 		$validator = Validator::make($request->all(), [
-			'sender_id' => 'required|string|max:50',
+		
 			'receiver' => 'required|string|max:20',
 			'type' => 'nullable|string|max:50',
 			'remove_duplicate' => 'sometimes|boolean',
@@ -42,8 +42,10 @@ class SMSController extends Controller
 
 		try {
 			$payload = $validator->validated();
+            
 			$otp = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
 			$payload['message'] = "Your login OTP is {$otp}.";
+			$payload['sender_id'] = "MyZoo";
 
 			$response = Http::timeout(15)
 				->withHeaders([
