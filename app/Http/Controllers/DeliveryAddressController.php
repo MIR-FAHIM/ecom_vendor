@@ -22,6 +22,7 @@ class DeliveryAddressController extends Controller
                 'mobile'  => 'required|string|max:20',
                 'address' => 'required|string',
                 'district'=> 'required|string|max:255',
+                'division'=> 'required|string|max:255',
                 'area'    => 'required|string|max:255',
                 'house'   => 'nullable|string|max:255',
                 'flat'    => 'nullable|string|max:255',
