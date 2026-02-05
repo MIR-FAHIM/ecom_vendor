@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('mobile', 20);            // Contact number
 
             $table->string('address');               // Full address line
+            $table->string('division');              // Division name
             $table->string('district');              // District name
             $table->string('area');                  // Area / Thana
 

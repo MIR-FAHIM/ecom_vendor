@@ -142,9 +142,16 @@ Route::prefix('orders')->group(function () {
 Route::prefix('addresses')->group(function () {
     Route::post('/add', [DeliveryAddressController::class, 'addDeliveryAddress']);
     Route::get('/user/{userId}', [DeliveryAddressController::class, 'getAddressByUser']);
+    Route::get('/all/divisions', [DeliveryAddressController::class, 'getDivisions']);
+    Route::get('/districts/{divisionId}', [DeliveryAddressController::class, 'getDistrictsByDivision']);
     Route::delete('/delete/{id}', [DeliveryAddressController::class, 'deleteAddress']);
     Route::patch('/inactive/{id}', [DeliveryAddressController::class, 'inactiveAddress']);
     Route::put('/update/{id}', [DeliveryAddressController::class, 'updateAddress']);
+});
+
+Route::prefix('locations')->group(function () {
+    Route::get('/divisions', [DeliveryAddressController::class, 'getDivisions']);
+    Route::get('/districts/{divisionId}', [DeliveryAddressController::class, 'getDistrictsByDivision']);
 });
 
 
