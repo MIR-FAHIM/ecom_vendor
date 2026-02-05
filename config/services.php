@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'muthobarta' => [
+        'base_url' => env('MUTHOBARTA_BASE_URL', 'https://sysadmin.muthobarta.com/api/v1'),
+        'api_key' => env('MUTHOBARTA_API_KEY'),
+    ],
+
 ];

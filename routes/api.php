@@ -24,6 +24,7 @@ use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WebsiteSettingController;
 use App\Http\Controllers\ShippingCostController;
+use App\Http\Controllers\SMSController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -253,4 +254,8 @@ Route::prefix('website-settings')->group(function () {
 Route::prefix('shipping-costs')->group(function () {
     Route::post('/set', [ShippingCostController::class, 'setShippingCost']);
     Route::get('/get', [ShippingCostController::class, 'getShippingCost']);
+});
+
+Route::prefix('sms')->group(function () {
+    Route::post('/send', [SMSController::class, 'sendSms']);
 });
