@@ -146,4 +146,50 @@ class ReportController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * GET /reports/shop/{shopId}/sales
+     * Returns last 12 months sales totals for a shop
+     */
+    public function shopSalesReport($shopId, Request $request)
+    {
+        try {
+            $shop = Shops::find($shopId);
+            if (!$shop) {
+                return $this->failed('Shop not found', null, 404);
+            }
+
+            $end = Carbon::now()->endOfMonth();
+            $start = $end->copy()->subMonths(11)->startOfMonth();
+
+            $monthlyTotals = OrderItem::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(line_total) as total")
+                ->where('shop_id', $shopId)
+                ->whereBetween('created_at', [$start, $end])
+                ->groupBy('ym')
+                ->orderBy('ym')
+                ->pluck('total', 'ym');
+
+            $months = [];
+            $cursor = $start->copy();
+            while ($cursor <= $end) {
+                $key = $cursor->format('Y-m');
+                $months[] = [
+                    'month' => $key,
+                    'amount' => (float) ($monthlyTotals[$key] ?? 0),
+                ];
+                $cursor->addMonth();
+            }
+
+            $data = [
+                'shop_id' => (int) $shopId,
+                'start_month' => $start->format('Y-m'),
+                'end_month' => $end->format('Y-m'),
+                'months' => $months,
+            ];
+
+            return $this->success('Shop sales report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
 }

@@ -217,6 +217,7 @@ Route::prefix('product-attributes')->group(function () {
 Route::prefix('reports')->group(function () {
     Route::get('/dashboard', [ReportController::class, 'dashboard']);
     Route::get('/shop/{userId}', [ReportController::class, 'shopReportByUser']);
+    Route::get('/shop/sales/{shopId}', [ReportController::class, 'shopSalesReport']);
 });
 
 Route::prefix('product-discounts')->group(function () {
