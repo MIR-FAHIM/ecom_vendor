@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Shops;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Transaction;
 use Carbon\Carbon;
@@ -98,6 +99,49 @@ class ReportController extends Controller
             ];
 
             return $this->success('Dashboard metrics fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/shop/{userId}
+     * Returns shop metrics for a vendor user
+     */
+    public function shopReportByUser($userId)
+    {
+        try {
+            $shopIds = Shops::where('user_id', $userId)->pluck('id');
+
+            if ($shopIds->isEmpty()) {
+                $data = [
+                    'shops_count' => 0,
+                    'orders_count' => 0,
+                    'orders_amount' => 0,
+                    'products_count' => 0,
+                ];
+
+                return $this->success('Shop report fetched', $data);
+            }
+
+            $shopsCount = $shopIds->count();
+            $ordersCount = OrderItem::whereIn('shop_id', $shopIds)
+                ->distinct('order_id')
+                ->count('order_id');
+
+            $ordersAmount = (float) OrderItem::whereIn('shop_id', $shopIds)
+                ->sum('line_total');
+
+            $productsCount = Product::whereIn('shop_id', $shopIds)->count();
+
+            $data = [
+                'shops_count' => $shopsCount,
+                'orders_count' => $ordersCount,
+                'orders_amount' => $ordersAmount,
+                'products_count' => $productsCount,
+            ];
+
+            return $this->success('Shop report fetched', $data);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
