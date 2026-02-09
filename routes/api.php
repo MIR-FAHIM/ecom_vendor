@@ -133,8 +133,8 @@ Route::prefix('orders')->group(function () {
     Route::get('/completed', [OrderController::class, 'completedOrders']);
     Route::get('/completed/{userId}', [OrderController::class, 'completedOrdersByUser']);
 
-    // Shop orders (via order_items.shop_id)
-    Route::get('/shop/{shopId}', [OrderController::class, 'listOrdersByShop']);
+    // Shop orders (via shops.user_id -> order_items.shop_id)
+    Route::get('/shop/{userId}', [OrderController::class, 'listOrdersByShop']);
     Route::get('/shop/{shopId}/check/{orderId}', [OrderController::class, 'checkShopOrder']);
 
     Route::get('/details/{id}', [OrderController::class, 'getOrderDetails']);

@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\OrderItem;
+use App\Models\Shops;
 use App\Models\ShippingCost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -232,20 +233,25 @@ public function allOrders(Request $request)
     }
 
     /**
-     * GET /orders/shop/{shopId}?per_page=20
-     * List orders for a specific shop (via order_items.shop_id)
+     * GET /orders/shop/{userId}?per_page=20
+     * List orders for a shop owned by a user (via shops.user_id -> order_items.shop_id)
      */
-    public function listOrdersByShop($shopId, Request $request)
+    public function listOrdersByShop($userId, Request $request)
     {
         try {
             $perPage = (int) $request->get('per_page', 20);
 
-            $orders = Order::whereHas('items', function ($query) use ($shopId) {
-                    $query->where('shop_id', $shopId);
+            $shop = Shops::where('user_id', $userId)->first();
+            if (!$shop) {
+                return $this->failed('Shop not found for this user', null, 404);
+            }
+
+            $orders = Order::whereHas('items', function ($query) use ($shop) {
+                    $query->where('shop_id', $shop->id);
                 })
                 ->with([
-                    'items' => function ($query) use ($shopId) {
-                        $query->where('shop_id', $shopId);
+                    'items' => function ($query) use ($shop) {
+                        $query->where('shop_id', $shop->id);
                     },
                     'user',
                 ])
