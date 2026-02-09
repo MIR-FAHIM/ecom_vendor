@@ -232,6 +232,62 @@ public function allOrders(Request $request)
     }
 
     /**
+     * GET /orders/shop/{shopId}?per_page=20
+     * List orders for a specific shop (via order_items.shop_id)
+     */
+    public function listOrdersByShop($shopId, Request $request)
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 20);
+
+            $orders = Order::whereHas('items', function ($query) use ($shopId) {
+                    $query->where('shop_id', $shopId);
+                })
+                ->with([
+                    'items' => function ($query) use ($shopId) {
+                        $query->where('shop_id', $shopId);
+                    },
+                    'user',
+                ])
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('Shop orders fetched successfully', $orders);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /orders/shop/{shopId}/check/{orderId}
+     * Check a specific order for a shop (via order_items.shop_id)
+     */
+    public function checkShopOrder($shopId, $orderId)
+    {
+        try {
+            $order = Order::where('id', $orderId)
+                ->whereHas('items', function ($query) use ($shopId) {
+                    $query->where('shop_id', $shopId);
+                })
+                ->with([
+                    'items' => function ($query) use ($shopId) {
+                        $query->where('shop_id', $shopId);
+                    },
+                    'user',
+                ])
+                ->first();
+
+            if (!$order) {
+                return $this->failed('Order not found for this shop', null, 404);
+            }
+
+            return $this->success('Order fetched successfully', $order);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * GET /orders/details/{id}
      */
     public function getOrderDetails($id)

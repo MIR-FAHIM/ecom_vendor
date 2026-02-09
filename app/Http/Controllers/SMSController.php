@@ -42,7 +42,18 @@ class SMSController extends Controller
 
 		try {
 			$payload = $validator->validated();
-            
+
+			$todayCount = OTPSms::where('mobile_number', $payload['receiver'])
+				->whereDate('created_at', Carbon::today())
+				->count();
+
+			if ($todayCount >= 6) {
+				return response()->json([
+					'status' => 'failed',
+					'message' => 'Daily SMS limit reached',
+				], 429);
+			}
+
 			$otp = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
 			$payload['message'] = "Your login OTP is {$otp}.";
 			$payload['sender_id'] = "MyZoo";

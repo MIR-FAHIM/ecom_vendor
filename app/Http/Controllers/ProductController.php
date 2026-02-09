@@ -277,6 +277,10 @@ class ProductController extends Controller
             if ($request->filled('shop_id')) {
                 $query->where('shop_id', $request->shop_id);
             }
+            
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
 
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
