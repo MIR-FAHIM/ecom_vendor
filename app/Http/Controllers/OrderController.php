@@ -177,7 +177,7 @@ class OrderController extends Controller
         }
     }
 
-public function allOrders(Request $request)
+    public function allOrders(Request $request)
     {
         try {
             $perPage = (int) $request->get('per_page', 20);
@@ -246,19 +246,12 @@ public function allOrders(Request $request)
                 return $this->failed('Shop not found for this user', null, 404);
             }
 
-            $orders = Order::whereHas('items', function ($query) use ($shop) {
-                    $query->where('shop_id', $shop->id);
-                })
-                ->with([
-                    'items' => function ($query) use ($shop) {
-                        $query->where('shop_id', $shop->id);
-                    },
-                    'user',
-                ])
+            $items = OrderItem::where('shop_id', $shop->id)
+                ->with(['order.user'])
                 ->latest()
                 ->paginate($perPage);
 
-            return $this->success('Shop orders fetched successfully', $orders);
+            return $this->success('Shop order items fetched successfully', $items);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
@@ -334,22 +327,22 @@ public function allOrders(Request $request)
             $order->status = $validated['status'];
             $order->save();
 
-            if($validated['status'] === 'completed') {
+            if ($validated['status'] === 'completed') {
                 // Also update all order items to completed
                 $order->payment_status = 'paid';
                 $order->save();
                 OrderItem::where('order_id', $order->id)
                     ->update(['status' => 'completed']);
 
-                    Transaction::create([
-                        'amount' => $order->total,
-                        'trx_type' => 'credit',
-                        'status' => 'completed',
-                        'source' => 'cod',
-                        'order_id' => $order->id,
-                        'type' => 'order_payment',
-                        'note' => 'Payment received for order #' . $order->order_number,
-                    ]);
+                Transaction::create([
+                    'amount' => $order->total,
+                    'trx_type' => 'credit',
+                    'status' => 'completed',
+                    'source' => 'cod',
+                    'order_id' => $order->id,
+                    'type' => 'order_payment',
+                    'note' => 'Payment received for order #' . $order->order_number,
+                ]);
             }
 
             return $this->success('Order status updated successfully', $order);
