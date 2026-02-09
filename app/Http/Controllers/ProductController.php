@@ -40,6 +40,7 @@ class ProductController extends Controller
                 'name' => ['nullable', 'string', 'max:255'],
                 'added_by' => ['nullable', 'string', 'max:255'],
                 'user_id' => ['nullable', 'integer', 'exists:users,id'],
+                'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
                 'category_id' => ['nullable', 'integer', 'exists:categories,id'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
 
@@ -123,6 +124,7 @@ class ProductController extends Controller
                 'name' => $validated['name'] ?? null,
                 'added_by' => $validated['added_by'] ?? null,
                 'user_id' => $validated['user_id'] ?? null,
+                'shop_id' => $validated['shop_id'] ?? null,
                 'category_id' => $validated['category_id'] ?? null,
                 'brand_id' => $validated['brand_id'] ?? null,
                 'photos' => $photos,
