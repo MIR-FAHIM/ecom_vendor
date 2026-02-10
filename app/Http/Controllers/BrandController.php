@@ -61,7 +61,7 @@ class BrandController extends Controller
                 $query->where('status', $request->status);
             }
 
-            $query->latest();
+            $query->with(['logo'])->latest();
 
             // /brands/list?all=1 (no pagination)
             if ($request->filled('all') && (int) $request->get('all') === 1) {
@@ -89,6 +89,8 @@ class BrandController extends Controller
             if (!$brand) {
                 return $this->failed('Brand not found', null, 404);
             }
+
+            $brand->load('logo');
 
             return $this->success('Brand fetched successfully', $brand);
         } catch (\Throwable $e) {
