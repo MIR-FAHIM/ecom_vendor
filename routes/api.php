@@ -32,7 +32,6 @@ Route::post('/auth/login-otp', [AuthController::class, 'loginWithOtp'])->without
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 Route::get('/auth/tokens', [AuthController::class, 'listTokens']);
 Route::delete('/auth/tokens/{id}', [AuthController::class, 'revokeToken']);
-
 Route::prefix('users')->group(function () {
     Route::post('/create', [UserController::class, 'createUser'])->withoutMiddleware('token');;
 
@@ -65,19 +64,15 @@ Route::prefix('categories')->group(function () {
 
 Route::prefix('brands')->group(function () {
     Route::post('/create', [BrandController::class, 'createBrand']);
-
     Route::get('/list', [BrandController::class, 'listBrands']);
     Route::get('/details/{id}', [BrandController::class, 'getBrandDetails']);
-
     Route::put('/update/{id}', [BrandController::class, 'updateBrand']);
-
     Route::delete('/delete/{id}', [BrandController::class, 'deleteBrand']);
 });
 
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
-
     Route::get('/list', [ProductController::class, 'listProducts']);
     Route::get('/category/wise', [ProductController::class, 'listCategoryProducts']);
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts']);
@@ -91,18 +86,13 @@ Route::prefix('products')->group(function () {
 });
 
 
-
 Route::prefix('shops')->group(function () {
     Route::post('/create', [ShopController::class, 'createShop']);
-
     Route::get('/list', [ShopController::class, 'listShops']);
     Route::get('/details/{id}', [ShopController::class, 'getShopDetails']);
     Route::get('/products/{id}', [ShopController::class, 'getShopProducts']);
-
     Route::post('/update/{id}', [ShopController::class, 'updateShop']);
-
     Route::patch('/status/{id}', [ShopController::class, 'updateShopStatus']);
-
     Route::delete('/delete/{id}', [ShopController::class, 'deleteShop']);
 });
 

@@ -118,7 +118,7 @@ class UserController extends Controller
     {
         try {
             $perPage = (int) ($request->get('per_page', 20));
-            $customers = User::where('role', 'customer')->latest()->paginate($perPage);
+            $customers = User::where('user_type', 'customer')->latest()->paginate($perPage);
 
             return $this->success('Customers fetched successfully', $customers);
         } catch (\Throwable $e) {
