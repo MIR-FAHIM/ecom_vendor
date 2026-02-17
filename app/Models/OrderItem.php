@@ -22,6 +22,7 @@ class OrderItem extends Model
         'line_total',
 
         'status',
+        'is_settle_with_seller',
     ];
 
     protected $casts = [

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrderItem;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
@@ -124,13 +126,15 @@ class TransactionController extends Controller
 
     /**
      * POST /transactions/settle
-     * Body: amount, note?, ref_id?, trx_id?, source?, order_id?, type?
+     * Body: amount, order_item_ids, note?, ref_id?, trx_id?, source?, order_id?, type?
      */
     public function settleAmount(Request $request, int $vendorId)
     {
         try {
             $validator = Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:0.01',
+                'order_item_ids' => 'required|array|min:1',
+                'order_item_ids.*' => 'integer|distinct',
                 'note' => 'nullable|string',
                 'ref_id' => 'nullable|string|max:255',
                 'trx_id' => 'nullable|string|max:255',
@@ -144,18 +148,31 @@ class TransactionController extends Controller
             }
 
             $data = $validator->validated();
+            $orderItemIds = $data['order_item_ids'];
 
-            $transaction = Transaction::create([
-                'amount' => $data['amount'],
-                'ref_id' => $vendorId,
-                'trx_id' => $data['trx_id'] ?? null,
-                'trx_type' => 'debit',
-                'note' => $data['note'] ?? null,
-                'status' => 'completed',
-                'source' => $data['source'] ?? 'settlement',
-                'order_id' => $data['order_id'] ?? null,
-                'type' => $data['type'] ?? 'settlement',
-            ]);
+            $foundCount = OrderItem::whereIn('id', $orderItemIds)->count();
+            if ($foundCount !== count($orderItemIds)) {
+                return $this->failed('One or more order items not found', null, 404);
+            }
+
+            $transaction = DB::transaction(function () use ($data, $vendorId, $orderItemIds) {
+                $settlement = Transaction::create([
+                    'amount' => $data['amount'],
+                    'ref_id' => $vendorId,
+                    'trx_id' => $data['trx_id'] ?? null,
+                    'trx_type' => 'debit',
+                    'note' => $data['note'] ?? null,
+                    'status' => 'completed',
+                    'source' => $data['source'] ?? 'settlement',
+                    'order_id' => $data['order_id'] ?? null,
+                    'type' => $data['type'] ?? 'settlement',
+                ]);
+
+                OrderItem::whereIn('id', $orderItemIds)
+                    ->update(['is_settle_with_seller' => true]);
+
+                return $settlement;
+            });
 
             return $this->success('Settlement recorded', $transaction, 201);
         } catch (\Throwable $e) {

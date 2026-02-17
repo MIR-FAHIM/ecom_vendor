@@ -41,6 +41,7 @@ return new class extends Migration
 
             // Item-level status (supports partial shipping/refund)
             $table->string('status')->nullable();
+            $table->boolean('is_settle_with_seller')->nullable();
             // pending, confirmed, packed, shipped, delivered, cancelled, refunded, returned
 
             $table->timestamps();
