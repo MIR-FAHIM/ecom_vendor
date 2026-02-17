@@ -55,6 +55,26 @@ class CategoryController extends Controller
     /**
      * GET /categories/list?parent_id=&status=&per_page=
      */
+
+    public function getCategoryInfo(Request $request)
+    {
+        try {
+            $categoryId = $request->get('category_id');
+            if (!$categoryId) {
+                return $this->failed('category_id is required', null, 422);
+            }
+
+            $category = Category::with('banner')->find($categoryId);
+
+            if (!$category) {
+                return $this->failed('Category not found', null, 404);
+            }
+
+            return $this->success('Category info fetched successfully', $category);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
     public function listCategories(Request $request)
     {
         try {

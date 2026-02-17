@@ -53,6 +53,7 @@ Route::prefix('categories')->group(function () {
     Route::post('/create', [CategoryController::class, 'createCategory']);
 
     Route::get('/list', [CategoryController::class, 'listCategories']);
+    Route::get('/category/info', [CategoryController::class, 'getCategoryInfo']);
     Route::get('/with-children', [CategoryController::class, 'getCategoryWithAllChildren']);
     Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails']);
     Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren']);
