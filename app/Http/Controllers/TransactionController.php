@@ -126,7 +126,7 @@ class TransactionController extends Controller
      * POST /transactions/settle
      * Body: amount, note?, ref_id?, trx_id?, source?, order_id?, type?
      */
-    public function settleAmount(Request $request)
+    public function settleAmount(Request $request, int $vendorId)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -147,7 +147,7 @@ class TransactionController extends Controller
 
             $transaction = Transaction::create([
                 'amount' => $data['amount'],
-                'ref_id' => $data['ref_id'] ?? null,
+                'ref_id' => $vendorId,
                 'trx_id' => $data['trx_id'] ?? null,
                 'trx_type' => 'debit',
                 'note' => $data['note'] ?? null,
