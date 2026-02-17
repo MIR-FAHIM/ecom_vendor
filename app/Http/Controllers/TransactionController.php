@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class TransactionController extends Controller
 {
@@ -116,6 +117,47 @@ class TransactionController extends Controller
                 'profit' => $profit,
                 'margin_percent' => $margin,
             ]);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * POST /transactions/settle
+     * Body: amount, note?, ref_id?, trx_id?, source?, order_id?, type?
+     */
+    public function settleAmount(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:0.01',
+                'note' => 'nullable|string',
+                'ref_id' => 'nullable|string|max:255',
+                'trx_id' => 'nullable|string|max:255',
+                'source' => 'nullable|string|max:100',
+                'order_id' => 'nullable|integer|exists:orders,id',
+                'type' => 'nullable|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->failed('Validation failed', $validator->errors(), 422);
+            }
+
+            $data = $validator->validated();
+
+            $transaction = Transaction::create([
+                'amount' => $data['amount'],
+                'ref_id' => $data['ref_id'] ?? null,
+                'trx_id' => $data['trx_id'] ?? null,
+                'trx_type' => 'debit',
+                'note' => $data['note'] ?? null,
+                'status' => 'completed',
+                'source' => $data['source'] ?? 'settlement',
+                'order_id' => $data['order_id'] ?? null,
+                'type' => $data['type'] ?? 'settlement',
+            ]);
+
+            return $this->success('Settlement recorded', $transaction, 201);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

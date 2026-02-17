@@ -248,6 +248,7 @@ Route::prefix('transactions')->group(function () {
     Route::get('/credit', [TransactionController::class, 'creditTransaction']);
     Route::get('/debit', [TransactionController::class, 'debitTransaction']);
     Route::get('/report', [TransactionController::class, 'transactionReport']);
+    Route::post('/settle', [TransactionController::class, 'settleAmount']);
 });
 
 Route::prefix('website-settings')->group(function () {
