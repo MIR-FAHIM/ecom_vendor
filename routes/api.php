@@ -25,6 +25,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WebsiteSettingController;
 use App\Http\Controllers\ShippingCostController;
 use App\Http\Controllers\SMSController;
+use App\Http\Controllers\BankAccountSellerController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -144,6 +145,11 @@ Route::prefix('addresses')->group(function () {
     Route::delete('/delete/{id}', [DeliveryAddressController::class, 'deleteAddress']);
     Route::patch('/inactive/{id}', [DeliveryAddressController::class, 'inactiveAddress']);
     Route::put('/update/{id}', [DeliveryAddressController::class, 'updateAddress']);
+});
+
+Route::prefix('bank-accounts')->group(function () {
+    Route::post('/add', [BankAccountSellerController::class, 'addBankAccount']);
+    Route::get('/user/{userId}', [BankAccountSellerController::class, 'getAccountByUserId']);
 });
 
 Route::prefix('locations')->group(function () {
