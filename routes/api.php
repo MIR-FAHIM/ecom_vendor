@@ -186,7 +186,7 @@ Route::prefix('reviews')->group(function () {
 // Banner endpoints
 Route::prefix('banners')->group(function () {
     Route::post('/add', [BannerController::class, 'addBanner']);
-    Route::get('/active', [BannerController::class, 'getActiveBanner']);
+    Route::get('/active', [BannerController::class, 'getActiveBanner'])->withoutMiddleware('token');
     Route::delete('/remove/{id}', [BannerController::class, 'removeBanner']);
 });
 
@@ -254,8 +254,8 @@ Route::prefix('transactions')->group(function () {
 Route::prefix('website-settings')->group(function () {
     Route::post('/logo', [WebsiteSettingController::class, 'addWebsiteLogo']);
     Route::post('/add', [WebsiteSettingController::class, 'addWebsiteSetting']);
-    Route::get('/logo', [WebsiteSettingController::class, 'getLogo']);
-    Route::get('/website', [WebsiteSettingController::class, 'getWebsiteSetting']);
+    Route::get('/logo', [WebsiteSettingController::class, 'getLogo'])->withoutMiddleware('token');
+    Route::get('/website', [WebsiteSettingController::class, 'getWebsiteSetting'])->withoutMiddleware('token');
 });
 Route::prefix('shipping-costs')->group(function () {
     Route::post('/set', [ShippingCostController::class, 'setShippingCost']);
