@@ -168,7 +168,7 @@ Route::prefix('wishlists')->group(function () {
 // Related products endpoints
 Route::prefix('related-products')->group(function () {
     Route::post('/add', [RelatedProductController::class, 'addRelatedProduct']);
-    Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct']);
+    Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct'])->withoutMiddleware('token');
     Route::delete('/remove/{id}', [RelatedProductController::class, 'remove']);
 });
 
@@ -176,7 +176,7 @@ Route::prefix('related-products')->group(function () {
 Route::prefix('reviews')->group(function () {
     Route::post('/add', [ReviewController::class, 'addReview']);
     Route::get('/list', [ReviewController::class, 'getAllReview']);
-    Route::get('/product/{productId}', [ReviewController::class, 'getReviewByProduct']);
+    Route::get('/product/{productId}', [ReviewController::class, 'getReviewByProduct'])->withoutMiddleware('token');
     Route::get('/user/{userId}', [ReviewController::class, 'getReviewByUser']);
     Route::put('/update-by-user/{id}', [ReviewController::class, 'updateReviewByUser']);
     Route::delete('/remove/{id}', [ReviewController::class, 'removeReview']);
