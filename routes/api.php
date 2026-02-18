@@ -53,7 +53,7 @@ Route::prefix('users')->group(function () {
 Route::prefix('categories')->group(function () {
     Route::post('/create', [CategoryController::class, 'createCategory']);
 
-    Route::get('/list', [CategoryController::class, 'listCategories']);
+    Route::get('/list', [CategoryController::class, 'listCategories'])->withoutMiddleware('token');
     Route::get('/category/info', [CategoryController::class, 'getCategoryInfo']);
     Route::get('/with-children', [CategoryController::class, 'getCategoryWithAllChildren']);
     Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails']);
@@ -75,11 +75,11 @@ Route::prefix('brands')->group(function () {
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
-    Route::get('/list', [ProductController::class, 'listProducts']);
-    Route::get('/category/wise', [ProductController::class, 'listCategoryProducts']);
-    Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts']);
-    Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts']);
-    Route::get('/details/{id}', [ProductController::class, 'getProductDetails']);
+    Route::get('/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;
+    Route::get('/category/wise', [ProductController::class, 'listCategoryProducts'])->withoutMiddleware('token');;
+    Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts'])->withoutMiddleware('token');;
+    Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts'])->withoutMiddleware('token');;
+    Route::get('/details/{id}', [ProductController::class, 'getProductDetails'])->withoutMiddleware('token');;
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
     // Images
