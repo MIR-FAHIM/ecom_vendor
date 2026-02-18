@@ -90,7 +90,7 @@ Route::prefix('products')->group(function () {
 
 Route::prefix('shops')->group(function () {
     Route::post('/create', [ShopController::class, 'createShop']);
-    Route::get('/list', [ShopController::class, 'listShops']);
+    Route::get('/list', [ShopController::class, 'listShops'])->withoutMiddleware('token');
     Route::get('/details/{id}', [ShopController::class, 'getShopDetails']);
     Route::get('/products/{id}', [ShopController::class, 'getShopProducts']);
     Route::post('/update/{id}', [ShopController::class, 'updateShop']);
