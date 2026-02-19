@@ -184,6 +184,15 @@ class ProductController extends Controller
 
             $product = Product::create($productData);
 
+            if (!empty($productData['thumbnail_img'])) {
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image' => $productData['thumbnail_img'],
+                    'is_primary' => true,
+                    'status' => 'active',
+                ]);
+            }
+
             return $this->success('Product created successfully', $product, 201);
         } catch (ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
