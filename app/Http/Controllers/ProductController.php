@@ -334,7 +334,7 @@ class ProductController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
-            $products = $query->latest()->paginate($perPage);
+            $products = $query->where('approved', 1)->latest()->paginate($perPage);
 
             return $this->success('Products fetched successfully', $products, 200,);
         } catch (\Throwable $e) {
@@ -381,7 +381,7 @@ class ProductController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
-            $products = $query->latest()->paginate($perPage);
+            $products = $query->where('approved', 1)->latest()->paginate($perPage);
 
             return $this->success('Products fetched successfully', $products, 200,);
         } catch (\Throwable $e) {
@@ -438,7 +438,7 @@ class ProductController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
-            $products = $query->latest()->paginate($perPage);
+            $products = $query->where('approved', 1)->latest()->paginate($perPage);
 
             return $this->success('Products fetched successfully', $products, 200,);
         } catch (\Throwable $e) {
@@ -485,7 +485,7 @@ class ProductController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
-            $products = $query->latest()->paginate($perPage);
+            $products = $query->where('approved', 1)->latest()->paginate($perPage);
 
             return $this->success('Products fetched successfully', $products, 200,);
         } catch (\Throwable $e) {
