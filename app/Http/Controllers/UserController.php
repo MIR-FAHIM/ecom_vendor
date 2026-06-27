@@ -68,7 +68,8 @@ class UserController extends Controller
 
             return $this->success('User created successfully', $user, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->failed('Validation failed', $e->errors(), 422);
+            $firstError = collect($e->errors())->flatten()->first();
+            return $this->failed($firstError ?? 'Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
