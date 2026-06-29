@@ -40,4 +40,14 @@ return [
         'api_key' => env('MUTHOBARTA_API_KEY','Token e76076c94b87ad21028fd2c13f931f727c6e5e24' ),
     ],
 
+    'aamarpay' => [
+
+    'base_url' => env('AAMARPAY_BASE_URL'),
+
+    'store_id' => env('AAMARPAY_STORE_ID'),
+
+    'signature_key' => env('AAMARPAY_SIGNATURE_KEY'),
+
+],
+
 ];

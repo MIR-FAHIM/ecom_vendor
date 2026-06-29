@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\OnlinePaymentController;
+
 use App\Http\Controllers\ProductDiscountController;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Controllers\UploadController;
@@ -283,4 +285,13 @@ Route::prefix('order-statuses')->group(function () {
 
 Route::prefix('error-logs')->group(function () {
     Route::get('/product-create', [ErrorLogController::class, 'listProductCreateErrorLogs']);
+});
+
+
+
+Route::prefix('payments')->group(function () {
+Route::post('/aamarpay/initiate', [OnlinePaymentController::class, 'initiate']);
+Route::post('/aamarpay/success', [OnlinePaymentController::class, 'success']);
+Route::post('/aamarpay/fail', [OnlinePaymentController::class, 'fail']);
+Route::post('/aamarpay/cancel', [OnlinePaymentController::class, 'cancel']);
 });
