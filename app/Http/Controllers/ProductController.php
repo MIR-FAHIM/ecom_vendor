@@ -838,7 +838,7 @@ class ProductController extends Controller
                 'est_shipping_days' => ['sometimes', 'nullable', 'integer'],
 
                 'meta_title' => ['sometimes', 'nullable', 'string', 'max:255'],
-                'meta_description' => ['sometimes', 'nullable', 'string', 'max:1000'],
+                'meta_description' => ['sometimes', 'nullable', 'string', 'max:5000'],
                 'meta_img' => ['sometimes', 'nullable', 'string', 'max:255'],
 
                 'slug' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('products', 'slug')->ignore($product->id)],
