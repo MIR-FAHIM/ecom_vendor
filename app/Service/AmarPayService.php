@@ -7,7 +7,7 @@ use App\Models\OnlinePayment;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
-class AamarPayService
+class AmarPayService
 {
     public function initiatePayment($orderId, $userId)
     {

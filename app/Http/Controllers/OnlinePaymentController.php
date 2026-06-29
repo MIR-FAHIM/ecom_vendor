@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Payment\AamarPayService;
+use App\Service\AmarPayService;
 use Illuminate\Http\Request;
 
 class OnlinePaymentController extends Controller
 {
     public function __construct(
-        protected AamarPayService $aamarPayService
+        protected AmarPayService $aamarPayService
     ) {}
 
     public function initiate(Request $request)
