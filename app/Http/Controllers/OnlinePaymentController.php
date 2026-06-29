@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Service\AmarPayService;
+
+
 use Illuminate\Http\Request;
+use App\Service\AmarPayService;
 
 class OnlinePaymentController extends Controller
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Payment;
+namespace App\Service;
 
 use App\Models\Order;
 use App\Models\OnlinePayment;
