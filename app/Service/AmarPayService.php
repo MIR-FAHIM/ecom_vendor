@@ -68,7 +68,7 @@ class AmarPayService
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to initiate payment.'
+                'message' => $result['message']
             ],400);
         }
 
