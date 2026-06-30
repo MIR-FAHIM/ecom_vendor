@@ -80,13 +80,13 @@ class AmarPayService
            return response()->json([
                 'success' => false,
                 'message' => $e->errors()
-            ],400);
+            ],422);
          
         } catch (\Throwable $e) {
            return response()->json([
                 'success' => false,
                 'message' =>$e->getMessage()
-            ],400);
+            ],421);
            
         }
 
