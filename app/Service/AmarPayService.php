@@ -11,10 +11,14 @@ class AmarPayService
 {
     public function initiatePayment($orderId, $userId)
     {
+        
+    try{
         $order = Order::findOrFail($orderId);
 
         $merchantTransaction = 'PAY-'.$order->id.'-'.time();
 
+
+        
         $payment = OnlinePayment::create([
             'order_id' => $order->id,
             'user_id' => $userId,
@@ -72,6 +76,20 @@ class AmarPayService
             'success'=>true,
             'payment_url'=>$result['payment_url']
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+           return response()->json([
+                'success' => false,
+                'message' => $e->errors()
+            ],400);
+         
+        } catch (\Throwable $e) {
+           return response()->json([
+                'success' => false,
+                'message' =>$e->getMessage()
+            ],400);
+           
+        }
+
     }
 
     public function success(array $data)
