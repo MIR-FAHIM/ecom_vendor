@@ -311,9 +311,10 @@ class AmarPayService
 
     private function validateGatewayPayment(array $data, OnlinePayment $payment): array
     {
-        $requestId = $data['pg_txnid'] ?? $data['bank_txn'] ?? $data['mer_txnid'] ?? null;
+        // AamarPay Search Transaction API expects the merchant transaction id.
+        $requestId = $payment->merchant_transaction_id;
         if (!$requestId) {
-            return ['valid' => false, 'reason' => 'Missing gateway transaction id'];
+            return ['valid' => false, 'reason' => 'Missing merchant transaction id'];
         }
 
         try {
@@ -334,16 +335,19 @@ class AmarPayService
 
         $amount = (float) ($body['amount'] ?? $body['amount_bdt'] ?? $data['amount'] ?? 0);
         $status = strtolower((string) ($body['pay_status'] ?? $body['status'] ?? $data['pay_status'] ?? ''));
+        $statusCode = (string) ($body['status_code'] ?? $data['status_code'] ?? '');
         $merchantTransactionId = $body['mer_txnid'] ?? $body['tran_id'] ?? $data['mer_txnid'] ?? null;
 
         $valid = $response->successful()
-            && in_array($status, ['successful', 'success', 'paid', 'complete', 'completed'], true)
+            && ($statusCode === '2' || in_array($status, ['successful', 'success', 'paid', 'complete', 'completed'], true))
             && $merchantTransactionId === $payment->merchant_transaction_id
             && abs($amount - (float) $payment->amount) < 0.01;
 
         return [
             'valid' => $valid,
+            'request_id' => $requestId,
             'status' => $status,
+            'status_code' => $statusCode,
             'amount' => $amount,
             'gateway_response' => $body,
         ];
