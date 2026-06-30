@@ -101,6 +101,8 @@ class OrderController extends Controller
 
             $orders = [];
             $orderIndex = 0;
+            $paymentGroupId = 'PAYGRP-' . date('Ymd') . '-' . strtoupper(Str::random(8));
+            $totalPayable = 0;
 
             foreach ($groupedItems as $shopId => $shopItems) {
                 // Recalculate subtotal for this shop's items
@@ -117,6 +119,7 @@ class OrderController extends Controller
                 $order = Order::create([
                     'user_id' => $validated['user_id'],
                     'order_number' => $orderNumber,
+                    'payment_group_id' => $paymentGroupId,
 
                     'status' => 'pending',
                     'payment_status' => 'unpaid',
@@ -163,6 +166,7 @@ class OrderController extends Controller
 
                 $order->load(['items']);
                 $orders[] = $order;
+                $totalPayable += $total;
                 $orderIndex++;
             }
 
@@ -174,7 +178,15 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return $this->success('Checkout successful. Orders created.', $orders, 201);
+            return $this->success('Checkout successful. Orders created.', [
+                'payment_group_id' => $paymentGroupId,
+                'order_ids' => collect($orders)->pluck('id')->values(),
+                'total_orders' => count($orders),
+                'subtotal' => round(collect($orders)->sum('subtotal'), 2),
+                'shipping_fee' => round(collect($orders)->sum('shipping_fee'), 2),
+                'total_payable' => round($totalPayable, 2),
+                'orders' => $orders,
+            ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return $this->failed('Validation failed', $e->errors(), 422);

@@ -11,6 +11,8 @@ class OnlinePayment extends Model
 
     protected $fillable = [
         'order_id',
+        'payment_group_id',
+        'order_ids',
         'user_id',
         'gateway',
         'merchant_transaction_id',
@@ -27,6 +29,7 @@ class OnlinePayment extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'gateway_fee' => 'decimal:2',
+        'order_ids' => 'array',
         'gateway_response' => 'array',
         'initiated_at' => 'datetime',
         'paid_at' => 'datetime',

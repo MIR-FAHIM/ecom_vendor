@@ -10,48 +10,59 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Collection;
 
 class AmarPayService
 {
-    public function initiatePayment(int $orderId, ?User $authenticatedUser = null): JsonResponse
+    public function initiatePayment(?int $orderId, ?User $authenticatedUser = null, ?string $paymentGroupId = null): JsonResponse
     {
         $configError = $this->validateConfig();
         if ($configError) {
             return $this->jsonFailed($configError, null, 500);
         }
 
-        $order = Order::find($orderId);
-        if (!$order) {
-            return $this->jsonFailed('Order not found', null, 404);
-        }
-
         if (!$authenticatedUser) {
             return $this->jsonFailed('Authentication required', null, 401);
         }
 
-        if (!$this->canInitiatePayment($order, $authenticatedUser)) {
+        $orders = $this->resolvePaymentOrders($orderId, $paymentGroupId);
+        if ($orders->isEmpty()) {
+            return $this->jsonFailed('No payable orders found', null, 404);
+        }
+
+        if (!$this->canInitiatePaymentForOrders($orders, $authenticatedUser)) {
             return $this->jsonFailed('You cannot pay for this order', [
-                'order_user_id' => (int) $order->user_id,
+                'order_user_ids' => $orders->pluck('user_id')->unique()->values(),
                 'authenticated_user_id' => (int) $authenticatedUser->id,
             ], 403);
         }
 
-        if ($order->payment_status === 'paid') {
-            return $this->jsonFailed('This order is already paid', null, 409);
+        $unpaidOrders = $orders
+            ->filter(fn (Order $order) => $order->payment_status !== 'paid')
+            ->values();
+
+        if ($unpaidOrders->isEmpty()) {
+            return $this->jsonFailed('All orders in this payment are already paid', null, 409);
         }
 
-        if ((float) $order->total <= 0) {
-            return $this->jsonFailed('Order total must be greater than zero', null, 422);
+        $amount = round($unpaidOrders->sum(fn (Order $order) => (float) $order->total), 2);
+        if ($amount <= 0) {
+            return $this->jsonFailed('Payment total must be greater than zero', null, 422);
         }
 
-        $merchantTransactionId = 'PAY-' . $order->id . '-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
+        $primaryOrder = $unpaidOrders->first();
+        $paymentGroupId = $paymentGroupId ?: $primaryOrder->payment_group_id;
+        $orderIds = $unpaidOrders->pluck('id')->values()->all();
+        $merchantTransactionId = 'PAY-' . $primaryOrder->id . '-' . now()->format('ymdHis') . '-' . random_int(1000, 9999);
 
         $payment = OnlinePayment::create([
-            'order_id' => $order->id,
-            'user_id' => $order->user_id,
+            'order_id' => $primaryOrder->id,
+            'payment_group_id' => $paymentGroupId,
+            'order_ids' => $orderIds,
+            'user_id' => $primaryOrder->user_id,
             'gateway' => 'aamarpay',
             'merchant_transaction_id' => $merchantTransactionId,
-            'amount' => $order->total,
+            'amount' => $amount,
             'currency' => 'BDT',
             'status' => 'initiated',
             'initiated_at' => now(),
@@ -63,19 +74,25 @@ class AmarPayService
             'success_url' => $this->callbackUrl('success'),
             'fail_url' => $this->callbackUrl('fail'),
             'cancel_url' => $this->callbackUrl('cancel'),
-            'amount' => number_format((float) $order->total, 2, '.', ''),
+            'amount' => number_format($amount, 2, '.', ''),
             'currency' => 'BDT',
             'signature_key' => config('services.aamarpay.signature_key'),
-            'desc' => 'Order #' . ($order->order_number ?? $order->id),
-            'cus_name' => $order->customer_name ?: 'Customer',
-            'cus_email' => optional($order->user)->email ?: 'customer@example.com',
-            'cus_phone' => $order->customer_phone ?: optional($order->user)->phone ?: '01000000000',
-            'cus_add1' => $order->shipping_address ?: 'Not provided',
-            'cus_city' => $order->district ?: $order->area ?: 'Dhaka',
-            'cus_state' => $order->zone ?: $order->district ?: 'Dhaka',
+            'desc' => $unpaidOrders->count() > 1
+                ? 'Checkout payment ' . ($paymentGroupId ?? $merchantTransactionId)
+                : 'Order #' . ($primaryOrder->order_number ?? $primaryOrder->id),
+            'cus_name' => $primaryOrder->customer_name ?: 'Customer',
+            'cus_email' => optional($primaryOrder->user)->email ?: 'customer@example.com',
+            'cus_phone' => $primaryOrder->customer_phone ?: optional($primaryOrder->user)->phone ?: '01000000000',
+            'cus_add1' => $primaryOrder->shipping_address ?: 'Not provided',
+            'cus_city' => $primaryOrder->district ?: $primaryOrder->area ?: 'Dhaka',
+            'cus_state' => $primaryOrder->zone ?: $primaryOrder->district ?: 'Dhaka',
             'cus_country' => 'Bangladesh',
+            'opt_a' => $paymentGroupId,
+            'opt_b' => implode(',', $orderIds),
+            'opt_c' => (string) $unpaidOrders->count(),
             'type' => 'json',
         ];
+        $payload = array_filter($payload, fn ($value) => $value !== null && $value !== '');
 
         try {
             $response = Http::timeout(20)
@@ -112,6 +129,9 @@ class AmarPayService
 
         return $this->jsonSuccess('Payment initiated successfully', [
             'payment_id' => $payment->id,
+            'payment_group_id' => $payment->payment_group_id,
+            'order_ids' => $payment->order_ids,
+            'amount' => $payment->amount,
             'merchant_transaction_id' => $payment->merchant_transaction_id,
             'payment_url' => $result['payment_url'],
         ]);
@@ -137,34 +157,43 @@ class AmarPayService
             $lockedPayment = OnlinePayment::whereKey($payment->id)->lockForUpdate()->first();
 
             if ($lockedPayment->status !== 'success') {
+                $orderIds = $this->orderIdsForPayment($lockedPayment);
+                $orders = Order::whereIn('id', $orderIds)->lockForUpdate()->get();
+                $gatewayTransactionId = $data['pg_txnid'] ?? $lockedPayment->gateway_transaction_id;
+
                 $lockedPayment->update([
                     'status' => 'success',
-                    'gateway_transaction_id' => $data['pg_txnid'] ?? $lockedPayment->gateway_transaction_id,
+                    'gateway_transaction_id' => $gatewayTransactionId,
                     'gateway_fee' => $data['gateway_fee'] ?? $lockedPayment->gateway_fee ?? 0,
                     'gateway_response' => $this->appendCallbackData($lockedPayment, $data, $validation),
                     'paid_at' => $lockedPayment->paid_at ?: now(),
                 ]);
 
-                $lockedPayment->order()->update(['payment_status' => 'paid']);
+                Order::whereIn('id', $orderIds)->update(['payment_status' => 'paid']);
 
-                Transaction::firstOrCreate(
-                    [
-                        'order_id' => $lockedPayment->order_id,
-                        'source' => 'online_payment',
-                        'type' => 'order_payment',
-                    ],
-                    [
-                        'amount' => $lockedPayment->amount,
-                        'ref_id' => $lockedPayment->merchant_transaction_id,
-                        'trx_id' => $lockedPayment->gateway_transaction_id,
-                        'trx_type' => 'credit',
-                        'status' => 'completed',
-                        'note' => 'Online payment received for order #' . optional($lockedPayment->order)->order_number,
-                    ]
-                );
+                foreach ($orders as $order) {
+                    Transaction::firstOrCreate(
+                        [
+                            'order_id' => $order->id,
+                            'source' => 'online_payment',
+                            'type' => 'order_payment',
+                        ],
+                        [
+                            'amount' => $order->total,
+                            'ref_id' => $lockedPayment->merchant_transaction_id,
+                            'trx_id' => $gatewayTransactionId,
+                            'trx_type' => 'credit',
+                            'status' => 'completed',
+                            'note' => 'Online payment received for order #' . $order->order_number,
+                        ]
+                    );
+                }
             }
 
-            return $lockedPayment->fresh(['order']);
+            $freshPayment = $lockedPayment->fresh(['order']);
+            $freshPayment->paid_orders = Order::whereIn('id', $this->orderIdsForPayment($lockedPayment))->get();
+
+            return $freshPayment;
         });
 
         return $this->jsonSuccess('Payment verified successfully', [
@@ -199,22 +228,73 @@ class AmarPayService
         ]);
 
         if ($status === 'failed') {
-            $payment->order()->update(['payment_status' => 'failed']);
+            Order::whereIn('id', $this->orderIdsForPayment($payment))
+                ->where('payment_status', '!=', 'paid')
+                ->update(['payment_status' => 'failed']);
         }
 
         return $this->jsonSuccess($message, ['payment_id' => $payment->id]);
     }
 
-    private function canInitiatePayment(Order $order, User $authenticatedUser): bool
+    private function resolvePaymentOrders(?int $orderId, ?string $paymentGroupId): Collection
     {
-        if ((int) $order->user_id === (int) $authenticatedUser->id) {
+        if ($paymentGroupId) {
+            return Order::where('payment_group_id', $paymentGroupId)
+                ->orderBy('id')
+                ->get();
+        }
+
+        if (!$orderId) {
+            return collect();
+        }
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            return collect();
+        }
+
+        if ($order->payment_group_id) {
+            return Order::where('payment_group_id', $order->payment_group_id)
+                ->orderBy('id')
+                ->get();
+        }
+
+        return collect([$order]);
+    }
+
+    private function canInitiatePaymentForOrders(Collection $orders, User $authenticatedUser): bool
+    {
+        if ($this->isAdmin($authenticatedUser)) {
             return true;
         }
 
+        return $orders->every(
+            fn (Order $order) => (int) $order->user_id === (int) $authenticatedUser->id
+        );
+    }
+
+    private function isAdmin(User $authenticatedUser): bool
+    {
         $role = strtolower((string) ($authenticatedUser->role ?? ''));
         $userType = strtolower((string) ($authenticatedUser->user_type ?? ''));
 
         return in_array('admin', [$role, $userType], true);
+    }
+
+    private function orderIdsForPayment(OnlinePayment $payment): array
+    {
+        if (is_array($payment->order_ids) && count($payment->order_ids) > 0) {
+            return array_map('intval', $payment->order_ids);
+        }
+
+        if ($payment->payment_group_id) {
+            return Order::where('payment_group_id', $payment->payment_group_id)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
+        return [(int) $payment->order_id];
     }
 
     private function findPaymentFromCallback(array $data): ?OnlinePayment

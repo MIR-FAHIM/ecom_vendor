@@ -14,14 +14,16 @@ class OnlinePaymentController extends Controller
     public function initiate(Request $request)
     {
         $validated = $request->validate([
-            'order_id' => ['required', 'integer', 'exists:orders,id'],
+            'order_id' => ['nullable', 'integer', 'exists:orders,id', 'required_without:payment_group_id'],
+            'payment_group_id' => ['nullable', 'string', 'max:64', 'required_without:order_id'],
         ]);
 
         $user = $request->attributes->get('api_user');
 
         return $this->aamarPayService->initiatePayment(
-            (int) $validated['order_id'],
-            $user
+            isset($validated['order_id']) ? (int) $validated['order_id'] : null,
+            $user,
+            $validated['payment_group_id'] ?? null
         );
     }
 
