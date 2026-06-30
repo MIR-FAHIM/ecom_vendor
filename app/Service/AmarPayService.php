@@ -50,11 +50,11 @@ class AmarPayService
 
             'cus_phone' => $order->phone,
 
-            'success_url' => route('payment.success'),
+            'success_url' => 'https://resellerbrain.com/admin-panel/support-tickets',
 
-            'fail_url' => route('payment.fail'),
+            'fail_url' =>'https://resellerbrain.com/admin-panel/support-tickets',
 
-            'cancel_url' => route('payment.cancel'),
+            'cancel_url' => 'https://resellerbrain.com/admin-panel/support-tickets',
 
             'type' => 'json'
         ]);
