@@ -290,8 +290,8 @@ Route::prefix('error-logs')->group(function () {
 
 
 Route::prefix('payments')->group(function () {
-Route::post('/aamarpay/initiate', [OnlinePaymentController::class, 'initiate']);
-Route::post('/aamarpay/success', [OnlinePaymentController::class, 'success']);
-Route::post('/aamarpay/fail', [OnlinePaymentController::class, 'fail']);
-Route::post('/aamarpay/cancel', [OnlinePaymentController::class, 'cancel']);
+    Route::post('/aamarpay/initiate', [OnlinePaymentController::class, 'initiate']);
+    Route::post('/aamarpay/success', [OnlinePaymentController::class, 'success'])->withoutMiddleware([ApiTokenAuth::class, 'token']);
+    Route::post('/aamarpay/fail', [OnlinePaymentController::class, 'fail'])->withoutMiddleware([ApiTokenAuth::class, 'token']);
+    Route::post('/aamarpay/cancel', [OnlinePaymentController::class, 'cancel'])->withoutMiddleware([ApiTokenAuth::class, 'token']);
 });

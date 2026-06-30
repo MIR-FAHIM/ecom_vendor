@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
-
 use Illuminate\Http\Request;
 use App\Service\AmarPayService;
 
@@ -15,11 +13,16 @@ class OnlinePaymentController extends Controller
 
     public function initiate(Request $request)
     {
-        $request->validate([
-            'order_id' => 'required|exists:orders,id'
+        $validated = $request->validate([
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
         ]);
 
-        return $this->aamarPayService->initiatePayment($request->order_id, $request->user_id);
+        $user = $request->attributes->get('api_user');
+
+        return $this->aamarPayService->initiatePayment(
+            (int) $validated['order_id'],
+            $user ? (int) $user->id : null
+        );
     }
 
     public function success(Request $request)

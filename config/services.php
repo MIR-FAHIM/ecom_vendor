@@ -48,6 +48,14 @@ return [
 
     'signature_key' => env('AAMARPAY_SIGNATURE_KEY'),
 
+    'success_url' => env('AAMARPAY_SUCCESS_URL'),
+
+    'fail_url' => env('AAMARPAY_FAIL_URL'),
+
+    'cancel_url' => env('AAMARPAY_CANCEL_URL'),
+
+    'validation_url' => env('AAMARPAY_VALIDATION_URL'),
+
 ],
 
 ];
