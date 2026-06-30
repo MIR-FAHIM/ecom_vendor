@@ -59,23 +59,27 @@ class AmarPayService
 
         $payload = [
             'store_id' => config('services.aamarpay.store_id'),
-            'signature_key' => config('services.aamarpay.signature_key'),
             'tran_id' => $merchantTransactionId,
+            'success_url' => $this->callbackUrl('success'),
+            'fail_url' => $this->callbackUrl('fail'),
+            'cancel_url' => $this->callbackUrl('cancel'),
             'amount' => number_format((float) $order->total, 2, '.', ''),
             'currency' => 'BDT',
+            'signature_key' => config('services.aamarpay.signature_key'),
             'desc' => 'Order #' . ($order->order_number ?? $order->id),
             'cus_name' => $order->customer_name ?: 'Customer',
             'cus_email' => optional($order->user)->email ?: 'customer@example.com',
             'cus_phone' => $order->customer_phone ?: optional($order->user)->phone ?: '01000000000',
-            'success_url' => $this->callbackUrl('success'),
-            'fail_url' => $this->callbackUrl('fail'),
-            'cancel_url' => $this->callbackUrl('cancel'),
+            'cus_add1' => $order->shipping_address ?: 'Not provided',
+            'cus_city' => $order->district ?: $order->area ?: 'Dhaka',
+            'cus_state' => $order->zone ?: $order->district ?: 'Dhaka',
+            'cus_country' => 'Bangladesh',
             'type' => 'json',
         ];
 
         try {
             $response = Http::timeout(20)
-                ->asForm()
+                ->asJson()
                 ->post($this->paymentUrl(), $payload);
         } catch (ConnectionException $e) {
             $payment->update([
@@ -91,7 +95,12 @@ class AmarPayService
             $result = ['raw_response' => $response->body()];
         }
 
-        $payment->update(['gateway_response' => $result]);
+        $payment->update([
+            'gateway_response' => [
+                'request' => $this->safePayloadForLogs($payload),
+                'response' => $result,
+            ],
+        ]);
 
         if (!$response->successful() || !$this->gatewayAccepted($result) || empty($result['payment_url'])) {
             $payment->update(['status' => 'failed']);
@@ -268,6 +277,14 @@ class AmarPayService
             'callback' => $callback,
             'validation' => $validation,
         ]);
+    }
+
+    private function safePayloadForLogs(array $payload): array
+    {
+        $safePayload = $payload;
+        $safePayload['signature_key'] = '***';
+
+        return $safePayload;
     }
 
     private function gatewayAccepted(array $result): bool
