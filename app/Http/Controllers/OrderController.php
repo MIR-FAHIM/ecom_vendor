@@ -62,8 +62,8 @@ class OrderController extends Controller
                 'customer_phone' => ['nullable', 'string', 'max:50'],
                 'shipping_address' => ['nullable', 'string', 'max:1000'],
 
-                'zone' => ['nullable', 'string', 'max:100'],
-                'district' => ['nullable', 'string', 'max:100'],
+                'zone' => ['nullable', 'string', 'max:5000'],
+                'district' => ['nullable', 'string', 'max:5000'],
                 'area' => ['nullable', 'string', 'max:100'],
                 'lat' => ['nullable', 'numeric'],
                 'lon' => ['nullable', 'numeric'],
