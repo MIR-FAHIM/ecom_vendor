@@ -58,4 +58,11 @@ return [
 
 ],
 
+    'frontend' => [
+        'url' => env('FRONTEND_URL'),
+        'payment_success_path' => env('FRONTEND_PAYMENT_SUCCESS_PATH', '/payment-success'),
+        'payment_failed_path' => env('FRONTEND_PAYMENT_FAILED_PATH', '/payment-failed'),
+        'payment_cancelled_path' => env('FRONTEND_PAYMENT_CANCELLED_PATH', '/payment-cancelled'),
+    ],
+
 ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Service\AmarPayService;
+use Illuminate\Http\RedirectResponse;
 
 class OnlinePaymentController extends Controller
 {
@@ -27,18 +28,64 @@ class OnlinePaymentController extends Controller
         );
     }
 
-    public function success(Request $request)
+    public function success(Request $request): RedirectResponse
     {
-        return $this->aamarPayService->success($request->all());
+        $response = $this->aamarPayService->success($request->all());
+        $payload = $response->getData();
+
+        if (($payload->status ?? null) !== 'success') {
+            return redirect()->away($this->frontendPaymentUrl('payment_failed_path', [
+                'status' => 'failed',
+                'message' => $payload->message ?? 'Payment verification failed',
+                'merchant_transaction_id' => $request->input('mer_txnid'),
+            ]));
+        }
+
+        $payment = $payload->data->payment ?? null;
+
+        return redirect()->away($this->frontendPaymentUrl('payment_success_path', [
+            'status' => 'success',
+            'payment_id' => $payment->id ?? null,
+            'payment_group_id' => $payment->payment_group_id ?? null,
+            'order_id' => $payment->order_id ?? null,
+            'amount' => $payment->amount ?? null,
+            'merchant_transaction_id' => $payment->merchant_transaction_id ?? $request->input('mer_txnid'),
+            'gateway_transaction_id' => $payment->gateway_transaction_id ?? $request->input('pg_txnid'),
+        ]));
     }
 
-    public function fail(Request $request)
+    public function fail(Request $request): RedirectResponse
     {
-        return $this->aamarPayService->fail($request->all());
+        $response = $this->aamarPayService->fail($request->all());
+        $payload = $response->getData();
+
+        return redirect()->away($this->frontendPaymentUrl('payment_failed_path', [
+            'status' => 'failed',
+            'message' => $payload->message ?? 'Payment failed',
+            'merchant_transaction_id' => $request->input('mer_txnid'),
+        ]));
     }
 
-    public function cancel(Request $request)
+    public function cancel(Request $request): RedirectResponse
     {
-        return $this->aamarPayService->cancel($request->all());
+        $response = $this->aamarPayService->cancel($request->all());
+        $payload = $response->getData();
+
+        return redirect()->away($this->frontendPaymentUrl('payment_cancelled_path', [
+            'status' => 'cancelled',
+            'message' => $payload->message ?? 'Payment cancelled',
+            'merchant_transaction_id' => $request->input('mer_txnid'),
+        ]));
+    }
+
+    private function frontendPaymentUrl(string $pathConfigKey, array $query = []): string
+    {
+        $frontendUrl = rtrim(config('services.frontend.url') ?: config('app.url'), '/');
+        $path = '/' . ltrim(config("services.frontend.{$pathConfigKey}", '/payment-success'), '/');
+
+        $query = array_filter($query, fn ($value) => $value !== null && $value !== '');
+        $queryString = http_build_query($query);
+
+        return $frontendUrl . $path . ($queryString ? '?' . $queryString : '');
     }
 }
