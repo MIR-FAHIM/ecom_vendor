@@ -44,11 +44,11 @@ class AmarPayService
 
             'desc' => 'Order #'.$order->id,
 
-            'cus_name' => $order->name,
+            'cus_name' => $order->customer_name,
 
-            'cus_email' => $order->email,
+            'cus_email' => 'no@gmail.com',
 
-            'cus_phone' => $order->phone,
+            'cus_phone' => $order->customer_phone,
 
             'success_url' => 'https://resellerbrain.com/admin-panel/support-tickets',
 
