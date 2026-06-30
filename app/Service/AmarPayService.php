@@ -24,7 +24,7 @@ class AmarPayService
             'user_id' => $userId,
             'gateway' => 'aamarpay',
             'merchant_transaction_id' => $merchantTransaction,
-            'amount' => $order->grand_total,
+            'amount' => $order->total,
             'currency' => 'BDT',
             'status' => 'initiated',
             'initiated_at' => now(),
@@ -38,7 +38,7 @@ class AmarPayService
 
             'tran_id' => $merchantTransaction,
 
-            'amount' => $order->grand_total,
+            'amount' => $order->total,
 
             'currency' => 'BDT',
 
