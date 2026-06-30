@@ -21,7 +21,7 @@ class OnlinePaymentController extends Controller
 
         return $this->aamarPayService->initiatePayment(
             (int) $validated['order_id'],
-            $user ? (int) $user->id : null
+            $user
         );
     }
 

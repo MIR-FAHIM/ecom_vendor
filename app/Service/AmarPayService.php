@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Models\OnlinePayment;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 
 class AmarPayService
 {
-    public function initiatePayment(int $orderId, ?int $authenticatedUserId = null): JsonResponse
+    public function initiatePayment(int $orderId, ?User $authenticatedUser = null): JsonResponse
     {
         $configError = $this->validateConfig();
         if ($configError) {
@@ -24,8 +25,15 @@ class AmarPayService
             return $this->jsonFailed('Order not found', null, 404);
         }
 
-        if ($authenticatedUserId && (int) $order->user_id !== $authenticatedUserId) {
-            return $this->jsonFailed('You cannot pay for this order', null, 403);
+        if (!$authenticatedUser) {
+            return $this->jsonFailed('Authentication required', null, 401);
+        }
+
+        if (!$this->canInitiatePayment($order, $authenticatedUser)) {
+            return $this->jsonFailed('You cannot pay for this order', [
+                'order_user_id' => (int) $order->user_id,
+                'authenticated_user_id' => (int) $authenticatedUser->id,
+            ], 403);
         }
 
         if ($order->payment_status === 'paid') {
@@ -186,6 +194,18 @@ class AmarPayService
         }
 
         return $this->jsonSuccess($message, ['payment_id' => $payment->id]);
+    }
+
+    private function canInitiatePayment(Order $order, User $authenticatedUser): bool
+    {
+        if ((int) $order->user_id === (int) $authenticatedUser->id) {
+            return true;
+        }
+
+        $role = strtolower((string) ($authenticatedUser->role ?? ''));
+        $userType = strtolower((string) ($authenticatedUser->user_type ?? ''));
+
+        return in_array('admin', [$role, $userType], true);
     }
 
     private function findPaymentFromCallback(array $data): ?OnlinePayment
