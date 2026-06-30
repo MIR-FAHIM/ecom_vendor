@@ -31,6 +31,7 @@ class Order extends Model
         'shipping_fee',
         'discount',
         'total',
+        'platform',
 
         'note',
     ];

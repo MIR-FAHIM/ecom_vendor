@@ -49,6 +49,7 @@ return new class extends Migration
 
             // Meta
             $table->text('note')->nullable();
+            $table->text('platform')->nullable();
 
             $table->timestamps();
         });

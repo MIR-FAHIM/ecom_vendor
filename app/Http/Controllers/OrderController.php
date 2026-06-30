@@ -69,6 +69,7 @@ class OrderController extends Controller
                 'lon' => ['nullable', 'numeric'],
 
                 'note' => ['nullable', 'string'],
+                'platform' => ['nullable', 'string'],
             ]);
 
             $cart = Cart::where('user_id', $validated['user_id'])
@@ -140,6 +141,7 @@ class OrderController extends Controller
                     'total' => $total,
 
                     'note' => $validated['note'] ?? null,
+                    'platform' => $validated['platform'] ?? null,
                 ]);
 
                 foreach ($shopItems as $ci) {
