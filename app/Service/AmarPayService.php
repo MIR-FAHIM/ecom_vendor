@@ -68,7 +68,7 @@ class AmarPayService
 
             return response()->json([
                 'success' => false,
-                'message' => $result['message']
+                'message' => $result
             ],400);
         }
 
