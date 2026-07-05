@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Shops;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -339,6 +341,49 @@ class UserController extends Controller
             $user->delete();
 
             return $this->success('User deleted successfully');
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * DELETE /users/delete-seller/{id}
+     */
+    public function deleteSeller($id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return $this->failed('Seller not found', null, 404);
+            }
+
+            if ($user->user_type !== 'seller') {
+                return $this->failed('This user is not a seller', null, 422);
+            }
+
+            $shopIds = Shops::where('user_id', $user->id)->pluck('id');
+
+            $productsBySeller = Product::where('user_id', $user->id)->count();
+            $productsByShop = $shopIds->isNotEmpty()
+                ? Product::whereIn('shop_id', $shopIds)->count()
+                : 0;
+
+            if ($productsBySeller > 0 || $productsByShop > 0) {
+                return $this->failed('Seller cannot be deleted because products are linked to this seller or seller shop', [
+                    'seller_id' => (int) $user->id,
+                    'shop_ids' => $shopIds->values(),
+                    'products_by_seller' => $productsBySeller,
+                    'products_by_shop' => $productsByShop,
+                ], 409);
+            }
+
+            DB::transaction(function () use ($user) {
+                Shops::where('user_id', $user->id)->delete();
+                $user->delete();
+            });
+
+            return $this->success('Seller and shops deleted successfully');
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

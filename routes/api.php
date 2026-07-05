@@ -54,6 +54,7 @@ Route::prefix('users')->group(function () {
     Route::patch('/unban/{id}', [UserController::class, 'unbanUser']);
 
     Route::delete('/delete/{id}', [UserController::class, 'deleteUser']);
+    Route::delete('/delete-seller/{id}', [UserController::class, 'deleteSeller']);
 });
 
 Route::prefix('categories')->group(function () {
