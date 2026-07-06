@@ -28,6 +28,7 @@ return new class extends Migration
 
             // Payment state
             $table->string('payment_status')->nullable(); 
+            $table->boolean('is_active')->nullable(); 
             // unpaid, paid, failed, refunded
 
             // Address snapshot (VERY IMPORTANT)

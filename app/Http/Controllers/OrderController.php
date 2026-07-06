@@ -256,7 +256,7 @@ class OrderController extends Controller
         try {
             $perPage = (int) $request->get('per_page', 20);
 
-            $orders = Order::with(['items.shop'])
+            $orders = Order::with(['items.shop'])->where('is_active', 1)
                 ->latest()
                 ->paginate($perPage);
 
@@ -381,6 +381,27 @@ class OrderController extends Controller
             }
 
             return $this->success('Order fetched successfully', $order);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * PATCH /orders/inactive/{id}
+     */
+    public function inactiveOrder($id)
+    {
+        try {
+            $order = Order::find($id);
+
+            if (!$order) {
+                return $this->failed('Order not found', null, 404);
+            }
+
+            $order->is_active = 0;
+            $order->save();
+
+            return $this->success('Order marked inactive successfully', $order);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

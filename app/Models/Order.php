@@ -16,6 +16,7 @@ class Order extends Model
 
         'status',
         'payment_status',
+        'is_active',
 
         'customer_name',
         'customer_phone',
