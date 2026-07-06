@@ -6,8 +6,10 @@ use App\Models\Product;
 use App\Models\ProductCreateErrorLog;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -75,6 +77,54 @@ class ProductController extends Controller
         }
     }
 
+    private function makeUniqueProductSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'product';
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Product::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    private function productCreateDatabaseError(QueryException $e): array
+    {
+        $message = $e->getMessage();
+
+        if (preg_match("/Column '([^']+)' cannot be null/", $message, $matches)) {
+            $field = $matches[1];
+            $label = str_replace('_', ' ', $field);
+
+            return [
+                'message' => ucfirst($label) . ' is required',
+                'errors' => [
+                    $field => ['The ' . $label . ' field is required.'],
+                ],
+                'code' => 422,
+            ];
+        }
+
+        if (str_contains($message, 'Duplicate entry')) {
+            return [
+                'message' => 'Duplicate product data',
+                'errors' => [
+                    'slug' => ['The product slug has already been taken.'],
+                ],
+                'code' => 422,
+            ];
+        }
+
+        return [
+            'message' => 'Product could not be created',
+            'errors' => ['database' => ['A database constraint prevented product creation.']],
+            'code' => 500,
+        ];
+    }
+
     /**
      * POST /products/create
      * Creates product (optionally with images array)
@@ -83,11 +133,11 @@ class ProductController extends Controller
     {
         try {
             $validated = $request->validate([
-                'name' => ['nullable', 'string', 'max:255'],
-                'added_by' => ['nullable', 'string', 'max:255'],
-                'user_id' => ['nullable', 'integer', 'exists:users,id'],
-                'shop_id' => ['nullable', 'integer', 'exists:shops,id'],
-                'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'name' => ['required', 'string', 'max:200'],
+                'added_by' => ['nullable', 'string', 'max:6'],
+                'user_id' => ['required', 'integer', 'exists:users,id'],
+                'shop_id' => ['required', 'integer', 'exists:shops,id'],
+                'category_id' => ['required', 'integer', 'exists:categories,id'],
                 'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
 
                 // photos may be an array of upload ids or a comma-separated string
@@ -100,7 +150,7 @@ class ProductController extends Controller
                 'tags' => ['nullable', 'string', 'max:255'],
                 'description' => ['nullable', 'string'],
 
-                'unit_price' => ['nullable', 'numeric', 'min:0'],
+                'unit_price' => ['required', 'numeric', 'min:0'],
                 'purchase_price' => ['nullable', 'numeric', 'min:0'],
 
                 'variant_product' => ['nullable', 'boolean'],
@@ -119,7 +169,7 @@ class ProductController extends Controller
 
                 'current_stock' => ['nullable', 'integer', 'min:0'],
                 'unit' => ['nullable', 'string', 'max:50'],
-                'weight' => ['nullable', 'numeric'],
+                'weight' => ['nullable', 'numeric', 'min:0'],
                 'min_qty' => ['nullable', 'integer'],
                 'low_stock_quantity' => ['nullable', 'integer'],
 
@@ -154,6 +204,14 @@ class ProductController extends Controller
                 'external_link_btn' => ['nullable', 'string', 'max:255'],
                 'wholesale_product' => ['nullable', 'boolean'],
                 'frequently_brought_selection_type' => ['nullable', 'string', 'max:50'],
+            ], [
+                'name.required' => 'Product name is required.',
+                'user_id.required' => 'Seller user is required.',
+                'shop_id.required' => 'Shop is required.',
+                'category_id.required' => 'Category is required.',
+                'unit_price.required' => 'Unit price is required.',
+                'weight.numeric' => 'Weight must be a valid number.',
+                'weight.min' => 'Weight cannot be negative.',
             ]);
 
             // Normalize photos: accept array of ids or comma string
@@ -167,11 +225,11 @@ class ProductController extends Controller
             }
 
             $productData = [
-                'name' => $validated['name'] ?? null,
-                'added_by' => $validated['added_by'] ?? null,
-                'user_id' => $validated['user_id'] ?? null,
-                'shop_id' => $validated['shop_id'] ?? null,
-                'category_id' => $validated['category_id'] ?? null,
+                'name' => $validated['name'],
+                'added_by' => $validated['added_by'] ?? 'admin',
+                'user_id' => $validated['user_id'],
+                'shop_id' => $validated['shop_id'],
+                'category_id' => $validated['category_id'],
                 'brand_id' => $validated['brand_id'] ?? null,
                 'photos' => $photos,
                 'thumbnail_img' => $validated['thumbnail_img'] ?? null,
@@ -179,23 +237,23 @@ class ProductController extends Controller
                 'video_link' => $validated['video_link'] ?? null,
                 'tags' => $validated['tags'] ?? null,
                 'description' => $validated['description'] ?? null,
-                'unit_price' => $validated['unit_price'] ?? null,
+                'unit_price' => $validated['unit_price'],
                 'purchase_price' => $validated['purchase_price'] ?? null,
-                'variant_product' => array_key_exists('variant_product', $validated) ? (bool) $validated['variant_product'] : null,
-                'attributes' => $validated['attributes'] ?? null,
+                'variant_product' => array_key_exists('variant_product', $validated) ? (bool) $validated['variant_product'] : false,
+                'attributes' => $validated['attributes'] ?? '[]',
                 'choice_options' => $validated['choice_options'] ?? null,
                 'colors' => $validated['colors'] ?? null,
                 'variations' => $validated['variations'] ?? null,
-                'todays_deal' => array_key_exists('todays_deal', $validated) ? (bool) $validated['todays_deal'] : null,
-                'published' => array_key_exists('published', $validated) ? (bool) $validated['published'] : null,
-                'approved' => array_key_exists('approved', $validated) ? (bool) $validated['approved'] : null,
-                'stock_visibility_state' => $validated['stock_visibility_state'] ?? null,
-                'cash_on_delivery' => array_key_exists('cash_on_delivery', $validated) ? (bool) $validated['cash_on_delivery'] : null,
-                'featured' => array_key_exists('featured', $validated) ? (bool) $validated['featured'] : null,
+                'todays_deal' => array_key_exists('todays_deal', $validated) ? (bool) $validated['todays_deal'] : false,
+                'published' => array_key_exists('published', $validated) ? (bool) $validated['published'] : true,
+                'approved' => array_key_exists('approved', $validated) ? (bool) $validated['approved'] : true,
+                'stock_visibility_state' => $validated['stock_visibility_state'] ?? 'quantity',
+                'cash_on_delivery' => array_key_exists('cash_on_delivery', $validated) ? (bool) $validated['cash_on_delivery'] : false,
+                'featured' => array_key_exists('featured', $validated) ? (bool) $validated['featured'] : false,
                 'seller_featured' => array_key_exists('seller_featured', $validated) ? (bool) $validated['seller_featured'] : false,
-                'current_stock' => $validated['current_stock'] ?? null,
+                'current_stock' => $validated['current_stock'] ?? 0,
                 'unit' => $validated['unit'] ?? null,
-                'weight' => $validated['weight'] ?? null,
+                'weight' => $validated['weight'] ?? 0,
                 'min_qty' => $validated['min_qty'] ?? 1,
                 'low_stock_quantity' => $validated['low_stock_quantity'] ?? null,
                 'discount' => $validated['discount'] ?? null,
@@ -204,7 +262,7 @@ class ProductController extends Controller
                 'discount_end_date' => $validated['discount_end_date'] ?? null,
                 'tax' => $validated['tax'] ?? null,
                 'tax_type' => $validated['tax_type'] ?? null,
-                'shipping_type' => $validated['shipping_type'] ?? null,
+                'shipping_type' => $validated['shipping_type'] ?? 'flat_rate',
                 'shipping_cost' => $validated['shipping_cost'] ?? 0,
                 'is_quantity_multiplied' => array_key_exists('is_quantity_multiplied', $validated) ? (bool) $validated['is_quantity_multiplied'] : false,
                 'est_shipping_days' => $validated['est_shipping_days'] ?? null,
@@ -213,8 +271,8 @@ class ProductController extends Controller
                 'meta_description' => $validated['meta_description'] ?? null,
                 'meta_img' => $validated['meta_img'] ?? null,
                 'pdf' => $validated['pdf'] ?? null,
-                'slug' => $validated['slug'] ?? null,
-                'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : null,
+                'slug' => $validated['slug'] ?? $this->makeUniqueProductSlug($validated['name']),
+                'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : false,
                 'earn_point' => $validated['earn_point'] ?? 0,
                 'rating' => $validated['rating'] ?? 0.00,
                 'barcode' => $validated['barcode'] ?? null,
@@ -223,7 +281,7 @@ class ProductController extends Controller
                 'file_name' => $validated['file_name'] ?? null,
                 'file_path' => $validated['file_path'] ?? null,
                 'external_link' => $validated['external_link'] ?? null,
-                'external_link_btn' => $validated['external_link_btn'] ?? null,
+                'external_link_btn' => $validated['external_link_btn'] ?? 'Buy Now',
                 'wholesale_product' => array_key_exists('wholesale_product', $validated) ? (bool) $validated['wholesale_product'] : false,
                 'frequently_brought_selection_type' => $validated['frequently_brought_selection_type'] ?? 'product',
             ];
@@ -243,10 +301,16 @@ class ProductController extends Controller
                         'status' => 'active',
                     ]);
                 }
+            } catch (QueryException $e) {
+                $this->logProductCreateError($request, $e, 'error', $productData);
+
+                $databaseError = $this->productCreateDatabaseError($e);
+
+                return $this->failed($databaseError['message'], $databaseError['errors'], $databaseError['code']);
             } catch (\Throwable $e) {
                 $this->logProductCreateError($request, $e, 'error', $productData);
 
-                return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+                return $this->failed('Product could not be created', ['error' => $e->getMessage()], 500);
             }
 
             return $this->success('Product created successfully', $product, 201);
