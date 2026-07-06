@@ -23,6 +23,8 @@ class Banner extends Model
         'image_id',
         'note',
         'is_active',
+        'is_promo',
+        'is_app',
     ];
 
     /**

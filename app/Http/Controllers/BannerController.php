@@ -122,6 +122,8 @@ class BannerController extends Controller
                 'image_path' => ['nullable', 'string', 'max:255'],
                 'note' => ['nullable', 'string'],
                 'is_active' => ['nullable', 'boolean'],
+                'is_promo' => ['nullable', 'boolean'],
+                'is_app' => ['nullable', 'boolean'],
             ]);
 
             $banner->fill($validated);

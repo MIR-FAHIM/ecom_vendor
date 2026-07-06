@@ -32,11 +32,14 @@ return new class extends Migration
             $table->text('note')->nullable(); // Optional description
 
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_promo')->default(false);
+            $table->boolean('is_app')->default(false);
 
             $table->timestamps();
 
             // Helpful indexes
             $table->index(['is_active']);
+      
         });
     }
 
