@@ -32,7 +32,7 @@ class AuthController extends Controller
         ], $code);
     }
 
-    private function logLoginSuccess(Request $request, User $user, ApiToken $apiToken, string $loginType, ?string $identifier = null, ?string $tokenName = null): void
+    private function logLoginSuccess(Request $request, User $user, ApiToken $apiToken, string $loginType, ?string $identifier = null, ?string $tokenName = null, ?string $platform = null): void
     {
         try {
             LoginSuccessLog::create([
@@ -45,6 +45,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'user_type' => $user->user_type,
+                'platform' => $platform,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'logged_in_at' => now(),
@@ -70,6 +71,7 @@ class AuthController extends Controller
                 'password' => ['required', 'string', 'min:6'],
                 'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
                 'name' => ['nullable', 'string', 'max:255'],
+                'platform' => ['nullable', 'string', 'max:50'],
             ]);
 
             $user = null;
@@ -116,7 +118,8 @@ class AuthController extends Controller
                 $created['token'],
                 'password',
                 $validated['email'] ?? $validated['phone'] ?? null,
-                $name
+                $name,
+                $validated['platform'] ?? null
             );
 
             return $this->success('Login successful', [
@@ -145,6 +148,7 @@ class AuthController extends Controller
                 'type' => ['nullable', 'string', 'max:50'],
                 'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
                 'name' => ['nullable', 'string', 'max:255'],
+                'platform' => ['nullable', 'string', 'max:50'],
             ]);
 
             $query = OTPSms::where('mobile_number', $validated['mobile_number'])
@@ -218,7 +222,8 @@ class AuthController extends Controller
                 $created['token'],
                 'otp',
                 $validated['mobile_number'],
-                $name
+                $name,
+                $validated['platform'] ?? null
             );
 
             return $this->success('Login successful', [

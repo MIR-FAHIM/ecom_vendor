@@ -28,7 +28,7 @@ class LoginSuccessLogController extends Controller
 
     /**
      * GET /reports/login-success
-     * Filters: user_id, user_type, login_type, start_date, end_date, per_page
+     * Filters: user_id, user_type, login_type, platform, start_date, end_date, per_page
      */
     public function report(Request $request)
     {
@@ -37,6 +37,7 @@ class LoginSuccessLogController extends Controller
                 'user_id' => ['nullable', 'integer'],
                 'user_type' => ['nullable', 'string', 'max:50'],
                 'login_type' => ['nullable', 'string', 'max:50'],
+                'platform' => ['nullable', 'string', 'max:50'],
                 'start_date' => ['nullable', 'date'],
                 'end_date' => ['nullable', 'date'],
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
@@ -54,6 +55,10 @@ class LoginSuccessLogController extends Controller
 
             if (!empty($validated['login_type'])) {
                 $query->where('login_type', $validated['login_type']);
+            }
+
+            if (!empty($validated['platform'])) {
+                $query->where('platform', $validated['platform']);
             }
 
             if (!empty($validated['start_date'])) {
