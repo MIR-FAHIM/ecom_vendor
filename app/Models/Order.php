@@ -55,6 +55,11 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
     
+    public function userAddress()
+    {
+        return $this->belongsTo(DeliveryAddress::class, 'user_address_id');
+    }
+    
     public function deliveryMan()
     {
         return $this->hasOne(AssignDeliveryMan::class, 'order_id')
