@@ -30,6 +30,7 @@ use App\Http\Controllers\SMSController;
 use App\Http\Controllers\BankAccountSellerController;
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\ErrorLogController;
+use App\Http\Controllers\LoginSuccessLogController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -224,6 +225,7 @@ Route::prefix('reports')->group(function () {
     Route::get('/shop/sales/{shopId}', [ReportController::class, 'shopSalesReport']);
     Route::get('/orders/monthly', [ReportController::class, 'orderReportMonthly']);
     Route::get('/today', [ReportController::class, 'todayReport']);
+    Route::get('/login-success', [LoginSuccessLogController::class, 'report']);
 });
 
 Route::prefix('product-discounts')->group(function () {

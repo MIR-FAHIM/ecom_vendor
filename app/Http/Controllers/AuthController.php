@@ -6,9 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Models\ApiToken;
+use App\Models\LoginSuccessLog;
 use App\Models\OTPSms;
 use App\Service\ApiTokenService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -28,6 +30,32 @@ class AuthController extends Controller
             'message' => $message,
             'errors' => $errors
         ], $code);
+    }
+
+    private function logLoginSuccess(Request $request, User $user, ApiToken $apiToken, string $loginType, ?string $identifier = null, ?string $tokenName = null): void
+    {
+        try {
+            LoginSuccessLog::create([
+                'user_id' => $user->id,
+                'api_token_id' => $apiToken->id,
+                'login_type' => $loginType,
+                'identifier' => $identifier,
+                'token_name' => $tokenName,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'user_type' => $user->user_type,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'logged_in_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to write login success log', [
+                'user_id' => $user->id ?? null,
+                'login_type' => $loginType,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -82,6 +110,14 @@ class AuthController extends Controller
             $name = $validated['name'] ?? 'login-token';
 
             $created = ApiTokenService::create($user, $scopes, $days, $name);
+            $this->logLoginSuccess(
+                $request,
+                $user,
+                $created['token'],
+                'password',
+                $validated['email'] ?? $validated['phone'] ?? null,
+                $name
+            );
 
             return $this->success('Login successful', [
                 'token' => $created['plain'],
@@ -176,6 +212,14 @@ class AuthController extends Controller
             $name = $validated['name'] ?? 'otp-login-token';
 
             $created = ApiTokenService::create($user, $scopes, $days, $name);
+            $this->logLoginSuccess(
+                $request,
+                $user,
+                $created['token'],
+                'otp',
+                $validated['mobile_number'],
+                $name
+            );
 
             return $this->success('Login successful', [
                 'token' => $created['plain'],
