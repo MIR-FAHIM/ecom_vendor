@@ -329,7 +329,7 @@ class OrderController extends Controller
         try {
             $perPage = (int) $request->get('per_page', 20);
 
-            $orders = Order::where('user_id', $userId)->with(['userAddress'])
+            $orders = Order::where('user_id', $userId)->with(['userAddress.district'])
                 ->latest()
                 ->paginate($perPage);
 
@@ -344,7 +344,7 @@ class OrderController extends Controller
         try {
             $perPage = (int) $request->get('per_page', 20);
 
-            $orders = Order::with(['items.shop', 'userAddress'])->where('is_active', 1)
+            $orders = Order::with(['items.shop', 'userAddress.district'])->where('is_active', 1)
                 ->latest()
                 ->paginate($perPage);
 
@@ -371,7 +371,7 @@ class OrderController extends Controller
             $perPage = (int) $request->get('per_page', 20);
 
             $orders = Order::where('status', 'completed')
-                ->with(['items', 'user', 'userAddress'])
+                ->with(['items', 'user', 'userAddress.district'])
                 ->latest()
                 ->paginate($perPage);
 
@@ -392,7 +392,7 @@ class OrderController extends Controller
 
             $orders = Order::where('user_id', $userId)
                 ->where('status', 'completed')
-                ->with(['items', 'userAddress'])
+                ->with(['items', 'userAddress.district'])
                 ->latest()
                 ->paginate($perPage);
 
@@ -417,7 +417,7 @@ class OrderController extends Controller
             }
 
             $items = OrderItem::where('shop_id', $shop->id)
-                ->with(['order.user', 'userAddress'])
+                ->with(['order.user', 'userAddress.district'])
                 ->latest()
                 ->paginate($perPage);
 
@@ -462,7 +462,7 @@ class OrderController extends Controller
     public function getOrderDetails($id)
     {
         try {
-            $order = Order::with(['items.shop', 'deliveryMan.deliveryMan', 'userAddress'])->find($id);
+            $order = Order::with(['items.shop', 'deliveryMan.deliveryMan', 'userAddress.district'])->find($id);
 
             if (!$order) {
                 return $this->failed('Order not found', null, 404);
