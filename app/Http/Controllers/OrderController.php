@@ -9,8 +9,11 @@ use App\Models\Transaction;
 use App\Models\OrderItem;
 use App\Models\Shops;
 use App\Models\ShippingCost;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -180,6 +183,8 @@ class OrderController extends Controller
 
             DB::commit();
 
+            $smsResult = $this->sendCheckoutConfirmationSms($validated, $orders, $paymentGroupId, $totalPayable);
+
             return $this->success('Checkout successful. Orders created.', [
                 'payment_group_id' => $paymentGroupId,
                 'order_ids' => collect($orders)->pluck('id')->values(),
@@ -187,6 +192,7 @@ class OrderController extends Controller
                 'subtotal' => round(collect($orders)->sum('subtotal'), 2),
                 'shipping_fee' => round(collect($orders)->sum('shipping_fee'), 2),
                 'total_payable' => round($totalPayable, 2),
+                'sms' => $smsResult,
                 'orders' => $orders,
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -195,6 +201,86 @@ class OrderController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function sendCheckoutConfirmationSms(array $validated, array $orders, string $paymentGroupId, float $totalPayable): array
+    {
+        $receiver = $validated['customer_phone'] ?? null;
+
+        if (!$receiver && !empty($validated['user_id'])) {
+            $receiver = optional(User::find($validated['user_id']))->phone;
+        }
+
+        if (!$receiver) {
+            return [
+                'status' => 'skipped',
+                'message' => 'Customer phone number not found',
+            ];
+        }
+
+        $apiKey = config('services.muthobarta.api_key');
+        $baseUrl = rtrim(config('services.muthobarta.base_url'), '/');
+
+        if (!$apiKey || !$baseUrl) {
+            return [
+                'status' => 'skipped',
+                'message' => 'SMS provider is not configured',
+            ];
+        }
+
+        $orderNumbers = collect($orders)->pluck('order_number')->filter()->values();
+        $reference = $orderNumbers->count() === 1
+            ? $orderNumbers->first()
+            : $paymentGroupId;
+
+        $message = 'MyZoo: Your order ' . $reference . ' has been placed successfully. Total BDT ' . number_format($totalPayable, 2, '.', '') . '. Thank you.';
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders([
+                    'Authorization' => $apiKey,
+                    'Accept' => 'application/json',
+                ])
+                ->post($baseUrl . '/send-sms', [
+                    'receiver' => $receiver,
+                    'message' => $message,
+                    'sender_id' => 'MyZoo',
+                    'remove_duplicate' => true,
+                    'type' => 'order_confirmation',
+                ]);
+
+            if ($response->failed()) {
+                Log::warning('Checkout confirmation SMS failed', [
+                    'receiver' => $receiver,
+                    'payment_group_id' => $paymentGroupId,
+                    'status' => $response->status(),
+                    'response' => $response->json() ?? $response->body(),
+                ]);
+
+                return [
+                    'status' => 'failed',
+                    'message' => 'SMS provider request failed',
+                    'provider_status' => $response->status(),
+                ];
+            }
+
+            return [
+                'status' => 'success',
+                'message' => 'Order confirmation SMS sent successfully',
+                'receiver' => $receiver,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Checkout confirmation SMS exception', [
+                'receiver' => $receiver,
+                'payment_group_id' => $paymentGroupId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'status' => 'failed',
+                'message' => 'Could not send order confirmation SMS',
+            ];
         }
     }
 

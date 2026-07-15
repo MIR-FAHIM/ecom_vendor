@@ -17,7 +17,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\OnlinePaymentController;
-
 use App\Http\Controllers\ProductDiscountController;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Controllers\UploadController;
@@ -47,25 +46,20 @@ Route::prefix('users')->group(function () {
     Route::get('/vendors', [UserController::class, 'getVendors']);
     Route::get('/delivery-men', [UserController::class, 'getDeliveryMan']);
     Route::get('/details/{id}', [UserController::class, 'getUserDetails']);
-
     Route::put('/update/{id}', [UserController::class, 'updateUser']);
-
     Route::patch('/ban/{id}', [UserController::class, 'banUser']);
     Route::patch('/unban/{id}', [UserController::class, 'unbanUser']);
-
     Route::delete('/delete/{id}', [UserController::class, 'deleteUser']);
     Route::delete('/delete-seller/{id}', [UserController::class, 'deleteSeller']);
 });
 
 Route::prefix('categories')->group(function () {
     Route::post('/create', [CategoryController::class, 'createCategory']);
-
     Route::get('/list', [CategoryController::class, 'listCategories'])->withoutMiddleware('token');
     Route::get('/category/info', [CategoryController::class, 'getCategoryInfo'])->withoutMiddleware('token');
     Route::get('/with-children', [CategoryController::class, 'getCategoryWithAllChildren'])->withoutMiddleware('token');
     Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails'])->withoutMiddleware('token');
     Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren'])->withoutMiddleware('token');
-
     Route::put('/update/{id}', [CategoryController::class, 'updateCategory']);
 
     Route::delete('/delete/{id}', [CategoryController::class, 'deleteCategory']);
