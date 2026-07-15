@@ -38,6 +38,7 @@ return new class extends Migration
 
             $table->string('zone')->nullable();
             $table->string('district')->nullable();
+            $table->integer('user_address_id')->nullable();
             $table->string('area')->nullable();
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('lon', 10, 7)->nullable();

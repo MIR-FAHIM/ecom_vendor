@@ -33,6 +33,7 @@ class Order extends Model
         'discount',
         'total',
         'platform',
+        'user_address_id',
 
         'note',
     ];

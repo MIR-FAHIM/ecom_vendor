@@ -60,6 +60,7 @@ class OrderController extends Controller
             $validated = $request->validate([
                 'user_id' => ['required', 'integer', 'exists:users,id'],
                 'is_outside_dhaka' => ['nullable', 'integer', 'in:0,1'],
+                'user_address_id' => ['nullable', 'integer',],
 
                 'customer_name' => ['nullable', 'string', 'max:255'],
                 'customer_phone' => ['nullable', 'string', 'max:50'],
@@ -134,6 +135,7 @@ class OrderController extends Controller
 
                     'zone' => $validated['zone'] ?? null,
                     'district' => $validated['district'] ?? null,
+                    'user_address_id' => $validated['user_address_id'] ?? null,
                     'area' => $validated['area'] ?? null,
                     'lat' => $validated['lat'] ?? null,
                     'lon' => $validated['lon'] ?? null,
