@@ -8,6 +8,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -164,10 +165,37 @@ class UserController extends Controller
     public function getCustomers(Request $request)
     {
         try {
-            $perPage = (int) ($request->get('per_page', 20));
-            $customers = User::where('user_type', 'customer')->latest()->paginate($perPage);
+            $validated = $request->validate([
+                'page' => ['nullable', 'integer', 'min:1'],
+                'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
+                'search' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            $perPage = (int) ($validated['per_page'] ?? 20);
+
+            $query = User::where('user_type', 'customer');
+
+            if (!empty($validated['search'])) {
+                $search = trim($validated['search']);
+                $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+                $hasMobileColumn = Schema::hasColumn('users', 'mobile');
+
+                $query->where(function ($q) use ($like, $hasMobileColumn) {
+                    $q->where('name', 'like', $like)
+                        ->orWhere('phone', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+
+                    if ($hasMobileColumn) {
+                        $q->orWhere('mobile', 'like', $like);
+                    }
+                });
+            }
+
+            $customers = $query->latest()->paginate($perPage);
 
             return $this->success('Customers fetched successfully', $customers);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
