@@ -13,6 +13,7 @@ class LoginSuccessLog extends Model
         'user_id',
         'api_token_id',
         'login_type',
+        'platform',
         'identifier',
         'token_name',
         'name',

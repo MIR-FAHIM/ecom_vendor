@@ -13,6 +13,7 @@ return new class extends Migration
             $table->unsignedInteger('user_id')->nullable()->index();
             $table->unsignedBigInteger('api_token_id')->nullable()->index();
             $table->string('login_type', 50)->index();
+            $table->string('platform', 50)->nullable()->index();
             $table->string('identifier')->nullable();
             $table->string('token_name')->nullable();
             $table->string('name')->nullable();
