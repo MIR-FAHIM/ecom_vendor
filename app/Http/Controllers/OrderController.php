@@ -169,6 +169,10 @@ class OrderController extends Controller
 
                         'status' => 'pending',
                     ]);
+
+                    if ($product) {
+                        $product->increment('num_of_sale', max(1, (int) ($ci->qty ?? 1)));
+                    }
                 }
 
                 $order->load(['items']);
