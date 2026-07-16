@@ -266,7 +266,8 @@ class UserController extends Controller
                 'mobile' => ['nullable', 'string', 'max:50'],
                 'optional_phone' => ['nullable', 'string', 'max:50'],
                 'address' => ['nullable', 'string', 'max:1000'],
-                'fcm_token' => ['nullable', 'string', 'max:500'],
+                'fcm_token' => ['nullable', 'string', 'max:4096'],
+                'device_token' => ['nullable', 'string', 'max:4096'],
                 'status' => ['nullable', 'string', 'max:50'],
 
                 'zone' => ['nullable', 'string', 'max:100'],
@@ -286,7 +287,9 @@ class UserController extends Controller
                 'mobile' => array_key_exists('mobile', $validated) ? $validated['mobile'] : $user->mobile,
                 'optional_phone' => array_key_exists('optional_phone', $validated) ? $validated['optional_phone'] : $user->optional_phone,
                 'address' => array_key_exists('address', $validated) ? $validated['address'] : $user->address,
-                'fcm_token' => array_key_exists('fcm_token', $validated) ? $validated['fcm_token'] : $user->fcm_token,
+                'device_token' => array_key_exists('device_token', $validated)
+                    ? $validated['device_token']
+                    : (array_key_exists('fcm_token', $validated) ? $validated['fcm_token'] : $user->device_token),
                 'status' => array_key_exists('status', $validated) ? $validated['status'] : $user->status,
 
                 'zone' => array_key_exists('zone', $validated) ? $validated['zone'] : $user->zone,

@@ -58,6 +58,13 @@ return [
 
 ],
 
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+        'service_account_json' => env('FIREBASE_SERVICE_ACCOUNT_JSON'),
+        'token_uri' => env('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
+    ],
+
     'frontend' => [
         'url' => env('FRONTEND_URL'),
         'payment_success_path' => env('FRONTEND_PAYMENT_SUCCESS_PATH', '/payment-success'),

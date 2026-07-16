@@ -31,6 +31,7 @@ use App\Http\Controllers\BankAccountSellerController;
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LoginSuccessLogController;
+use App\Http\Controllers\FirebaseNotificationController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -283,6 +284,10 @@ Route::prefix('order-statuses')->group(function () {
 
 Route::prefix('error-logs')->group(function () {
     Route::get('/product-create', [ErrorLogController::class, 'listProductCreateErrorLogs']);
+});
+
+Route::prefix('firebase')->group(function () {
+    Route::post('/test-push', [FirebaseNotificationController::class, 'testPush']);
 });
 
 
