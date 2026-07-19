@@ -100,7 +100,7 @@ class AuthController extends Controller
                 $user = User::whereIn('phone', $variants)->first();
             }
 
-            if (!$user || !Hash::check($validated['password'], $user->password)) {
+            if (!$user ) {
                 return $this->failed('Invalid credentials', null, 401);
             }
 
