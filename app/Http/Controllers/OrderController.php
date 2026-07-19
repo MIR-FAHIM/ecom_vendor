@@ -421,7 +421,7 @@ class OrderController extends Controller
             }
 
             $items = OrderItem::where('shop_id', $shop->id)
-                ->with(['order.user', 'userAddress.district', 'userAddress.division'])
+                ->with(['order.user'])
                 ->latest()
                 ->paginate($perPage);
 
