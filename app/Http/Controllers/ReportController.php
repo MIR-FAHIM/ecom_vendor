@@ -33,6 +33,16 @@ class ReportController extends Controller
         ], $code);
     }
 
+    private function countShopOrdersBetween($shopIds, Carbon $start, Carbon $end): int
+    {
+        return (int) OrderItem::whereIn('shop_id', $shopIds)
+            ->whereHas('order', function ($query) use ($start, $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            })
+            ->distinct('order_id')
+            ->count('order_id');
+    }
+
     /**
      * GET /reports/dashboard
      * Returns summary counts and sales metrics
@@ -120,6 +130,16 @@ class ReportController extends Controller
                     'orders_count' => 0,
                     'orders_amount' => 0,
                     'products_count' => 0,
+                    'today_total_orders' => 0,
+                    'last_week_total_orders' => 0,
+                    'last_month_total_orders' => 0,
+                    'year_total_orders' => 0,
+                    'orders_by_period' => [
+                        'today' => 0,
+                        'lastWeek' => 0,
+                        'lastMonth' => 0,
+                        'year' => 0,
+                    ],
                 ];
 
                 return $this->success('Shop report fetched', $data);
@@ -134,12 +154,43 @@ class ReportController extends Controller
                 ->sum('line_total');
 
             $productsCount = Product::whereIn('shop_id', $shopIds)->count();
+            $now = Carbon::now();
+            $todayTotalOrders = $this->countShopOrdersBetween(
+                $shopIds,
+                $now->copy()->startOfDay(),
+                $now->copy()->endOfDay()
+            );
+            $lastWeekTotalOrders = $this->countShopOrdersBetween(
+                $shopIds,
+                $now->copy()->subDays(6)->startOfDay(),
+                $now->copy()->endOfDay()
+            );
+            $lastMonthTotalOrders = $this->countShopOrdersBetween(
+                $shopIds,
+                $now->copy()->subDays(29)->startOfDay(),
+                $now->copy()->endOfDay()
+            );
+            $yearTotalOrders = $this->countShopOrdersBetween(
+                $shopIds,
+                $now->copy()->startOfYear(),
+                $now->copy()->endOfYear()
+            );
 
             $data = [
                 'shops_count' => $shopsCount,
                 'orders_count' => $ordersCount,
                 'orders_amount' => $ordersAmount,
                 'products_count' => $productsCount,
+                'today_total_orders' => $todayTotalOrders,
+                'last_week_total_orders' => $lastWeekTotalOrders,
+                'last_month_total_orders' => $lastMonthTotalOrders,
+                'year_total_orders' => $yearTotalOrders,
+                'orders_by_period' => [
+                    'today' => $todayTotalOrders,
+                    'lastWeek' => $lastWeekTotalOrders,
+                    'lastMonth' => $lastMonthTotalOrders,
+                    'year' => $yearTotalOrders,
+                ],
             ];
 
             return $this->success('Shop report fetched', $data);
