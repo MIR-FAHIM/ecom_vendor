@@ -118,6 +118,47 @@ class ProductController extends Controller
         return filter_var($data[$key], FILTER_VALIDATE_BOOLEAN);
     }
 
+    private function normalizeProductPhotos($photos): array
+    {
+        $photos = trim((string) $photos);
+        if ($photos === '') {
+            return [];
+        }
+
+        $decoded = json_decode($photos, true);
+        $items = is_array($decoded) ? $decoded : explode(',', $photos);
+
+        return collect($items)
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '')
+            ->values()
+            ->all();
+    }
+
+    private function removeProductImageReferences(Product $product, ProductImage $image): void
+    {
+        $references = collect([$image->id, $image->image])
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($references)) {
+            $photos = collect($this->normalizeProductPhotos($product->photos))
+                ->reject(fn ($photo) => in_array($photo, $references, true))
+                ->values()
+                ->all();
+
+            $product->photos = count($photos) > 0 ? implode(',', $photos) : null;
+        }
+
+        $thumbnail = trim((string) $product->thumbnail_img);
+        if ((bool) $image->is_primary || ($thumbnail !== '' && in_array($thumbnail, $references, true))) {
+            $product->thumbnail_img = null;
+        }
+    }
+
     private function productCreateDatabaseError(QueryException $e): array
     {
         $message = $e->getMessage();
@@ -1165,13 +1206,27 @@ class ProductController extends Controller
     public function deleteProductImage($imageId)
     {
         try {
-            $img = ProductImage::find($imageId);
+            $deleted = DB::transaction(function () use ($imageId) {
+                $img = ProductImage::whereKey($imageId)->lockForUpdate()->first();
 
-            if (!$img) {
+                if (!$img) {
+                    return false;
+                }
+
+                $product = Product::whereKey($img->product_id)->lockForUpdate()->first();
+                if ($product) {
+                    $this->removeProductImageReferences($product, $img);
+                    $product->save();
+                }
+
+                $img->delete();
+
+                return true;
+            });
+
+            if (!$deleted) {
                 return $this->failed('Product image not found', null, 404);
             }
-
-            $img->delete();
 
             return $this->success('Product image deleted successfully');
         } catch (\Throwable $e) {
