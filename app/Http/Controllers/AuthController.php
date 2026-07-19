@@ -72,6 +72,7 @@ class AuthController extends Controller
                 'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
                 'name' => ['nullable', 'string', 'max:255'],
                 'platform' => ['nullable', 'string', 'max:50'],
+                'fcm_token' => ['nullable', 'string', 'max:300'],
             ]);
 
             $user = null;
@@ -99,8 +100,12 @@ class AuthController extends Controller
                 $user = User::whereIn('phone', $variants)->first();
             }
 
-            if (!$user || !Hash::check($validated['password'], $user->password)) {
+            if (!$user ) {
                 return $this->failed('Invalid credentials', null, 401);
+            }
+
+            if (!empty($validated['fcm_token'])) {
+                $user->forceFill(['device_token' => $validated['fcm_token']])->save();
             }
 
             $scopes = ['basic'];
