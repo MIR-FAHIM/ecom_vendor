@@ -392,8 +392,8 @@ class ProductController extends Controller
                 $duplicate = $sourceProduct->replicate();
                 $duplicate->name = $validated['name'] ?? $this->makeDuplicateProductName($sourceProduct->name);
                 $duplicate->slug = $validated['slug'] ?? $this->makeUniqueProductSlug($duplicate->name);
-                $duplicate->published = $this->validatedBoolean($validated, 'published', false);
-                $duplicate->approved = $this->validatedBoolean($validated, 'approved', false);
+                $duplicate->published = $this->validatedBoolean($validated, 'published', true);
+                $duplicate->approved = $this->validatedBoolean($validated, 'approved', true);
                 $duplicate->todays_deal = false;
                 $duplicate->featured = false;
                 $duplicate->seller_featured = false;
