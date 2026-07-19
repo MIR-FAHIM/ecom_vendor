@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -89,6 +90,32 @@ class ProductController extends Controller
         }
 
         return $slug;
+    }
+
+    private function makeDuplicateProductName(string $name): string
+    {
+        return Str::limit($name, 193, '') . ' Copy';
+    }
+
+    private function isAdminUser($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $role = strtolower((string) ($user->role ?? ''));
+        $userType = strtolower((string) ($user->user_type ?? ''));
+
+        return in_array('admin', [$role, $userType], true);
+    }
+
+    private function validatedBoolean(array $data, string $key, bool $default): bool
+    {
+        if (!array_key_exists($key, $data)) {
+            return $default;
+        }
+
+        return filter_var($data[$key], FILTER_VALIDATE_BOOLEAN);
     }
 
     private function productCreateDatabaseError(QueryException $e): array
@@ -326,6 +353,114 @@ class ProductController extends Controller
                 'payload' => $request->all(),
             ]);
 
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * POST /products/duplicate/{id}
+     * Creates an editable draft copy of an existing product.
+     */
+    public function duplicateProductById(Request $request, $id)
+    {
+        try {
+            if (!$this->isAdminUser($request->attributes->get('api_user'))) {
+                return $this->failed('Only admin can duplicate products', null, 403);
+            }
+
+            $validated = $request->validate([
+                'name' => ['nullable', 'string', 'max:200'],
+                'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug'],
+                'published' => ['nullable', 'boolean'],
+                'approved' => ['nullable', 'boolean'],
+                'copy_images' => ['nullable', 'boolean'],
+                'copy_attributes' => ['nullable', 'boolean'],
+                'copy_discount' => ['nullable', 'boolean'],
+            ]);
+
+            $sourceProduct = Product::with([
+                'images',
+                'productAttributes',
+                'productDiscount',
+            ])->find($id);
+
+            if (!$sourceProduct) {
+                return $this->failed('Product not found', null, 404);
+            }
+
+            $duplicate = DB::transaction(function () use ($sourceProduct, $validated) {
+                $duplicate = $sourceProduct->replicate();
+                $duplicate->name = $validated['name'] ?? $this->makeDuplicateProductName($sourceProduct->name);
+                $duplicate->slug = $validated['slug'] ?? $this->makeUniqueProductSlug($duplicate->name);
+                $duplicate->published = $this->validatedBoolean($validated, 'published', false);
+                $duplicate->approved = $this->validatedBoolean($validated, 'approved', false);
+                $duplicate->todays_deal = false;
+                $duplicate->featured = false;
+                $duplicate->seller_featured = false;
+                $duplicate->num_of_sale = 0;
+                $duplicate->rating = 0;
+                $duplicate->barcode = null;
+
+                if (Schema::hasColumn('products', 'sku')) {
+                    $duplicate->sku = null;
+                }
+
+                $duplicate->save();
+
+                if (Schema::hasColumn('products', 'sku')) {
+                    $duplicate->sku = 'p' . $duplicate->id . 'v' . ($duplicate->shop_id ?? '0');
+                    $duplicate->save();
+                }
+
+                if ($this->validatedBoolean($validated, 'copy_images', true)) {
+                    foreach ($sourceProduct->images as $image) {
+                        $duplicateImage = $image->replicate();
+                        $duplicateImage->product_id = $duplicate->id;
+                        $duplicateImage->save();
+                    }
+                }
+
+                if ($this->validatedBoolean($validated, 'copy_attributes', true)) {
+                    foreach ($sourceProduct->productAttributes as $productAttribute) {
+                        $duplicateAttribute = $productAttribute->replicate();
+                        $duplicateAttribute->product_id = $duplicate->id;
+                        $duplicateAttribute->save();
+                    }
+                }
+
+                if ($this->validatedBoolean($validated, 'copy_discount', true) && $sourceProduct->productDiscount) {
+                    $duplicateDiscount = $sourceProduct->productDiscount->replicate();
+                    $duplicateDiscount->product_id = $duplicate->id;
+                    $duplicateDiscount->save();
+                }
+
+                return $duplicate->fresh([
+                    'images.upload',
+                    'primaryImage',
+                    'brand',
+                    'category',
+                    'subCategory',
+                    'shop',
+                    'productAttributes.attribute',
+                    'productAttributes.value',
+                    'productDiscount',
+                ]);
+            });
+
+            $productArr = $duplicate->toArray();
+            $productArr['final_sale_price'] = $this->getFinalSalePrice($duplicate);
+
+            return $this->success('Product duplicated successfully', [
+                'source_product_id' => (int) $sourceProduct->id,
+                'product' => $productArr,
+            ], 201);
+        } catch (ValidationException $e) {
+            return $this->failed('Validation failed', $e->errors(), 422);
+        } catch (QueryException $e) {
+            return $this->failed('Product could not be duplicated', [
+                'database' => [$e->getMessage()],
+            ], 500);
+        } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
