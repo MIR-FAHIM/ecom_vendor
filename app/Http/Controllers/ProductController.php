@@ -1018,6 +1018,7 @@ class ProductController extends Controller
             }
             $productArr = $product->toArray();
             $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
+            $productArr['seo'] = $product->seo;
             return $this->success('Product fetched successfully', $productArr);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
