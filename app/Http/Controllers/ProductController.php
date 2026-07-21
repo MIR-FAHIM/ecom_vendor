@@ -1043,6 +1043,7 @@ class ProductController extends Controller
                 'user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
                 'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
                 'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
+                'shop_id' => ['sometimes', 'nullable', 'integer', 'exists:shops,id'],
 
 
                 'thumbnail_img' => ['sometimes', 'nullable', 'integer', 'exists:uploads,id'],
@@ -1116,7 +1117,7 @@ class ProductController extends Controller
                 'thumbnail_img.exists' => 'Selected thumbnail image does not exist.',
                 'category_id.exists' => 'Selected category does not exist.',
                 'brand_id.exists' => 'Selected brand does not exist.',
-                'user_id.exists' => 'Selected seller user does not exist.',
+                'shop_id.exists' => 'Selected shop does not exist.',
             ]);
 
             if (array_key_exists('photos', $validated) && is_array($validated['photos'])) {
