@@ -87,7 +87,7 @@ Route::prefix('products')->group(function () {
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts'])->withoutMiddleware('token');;
     Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts'])->withoutMiddleware('token');;
     Route::get('/list/stock-out', [ProductController::class, 'listStockOutProducts'])->withoutMiddleware('token');
-    Route::get('/details/{id}', [ProductController::class, 'getProductDetails'])->withoutMiddleware('token');;
+    Route::get('/details/{identifier}', [ProductController::class, 'getProductDetails'])->withoutMiddleware('token');;
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
     // Images

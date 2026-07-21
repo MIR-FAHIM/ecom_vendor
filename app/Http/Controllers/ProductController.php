@@ -994,12 +994,12 @@ class ProductController extends Controller
     }
 
     /**
-     * GET /products/details/{id}
+     * GET /products/details/{identifier}
      */
-    public function getProductDetails($id)
+    public function getProductDetails($identifier)
     {
         try {
-            $product = Product::with([
+            $query = Product::with([
                 'images.upload',
                 'primaryImage',
                 'brand',
@@ -1011,7 +1011,11 @@ class ProductController extends Controller
                 'productAttributes.attribute',
                 'productAttributes.value',
 
-            ])->find($id);
+            ]);
+
+            $product = is_numeric($identifier)
+                ? $query->whereKey($identifier)->first()
+                : $query->where('slug', $identifier)->first();
 
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
