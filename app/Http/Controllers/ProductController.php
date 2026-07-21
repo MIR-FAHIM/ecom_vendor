@@ -97,6 +97,18 @@ class ProductController extends Controller
         return Str::limit($name, 193, '') . ' Copy';
     }
 
+    private function makeUniqueNumberedProductSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'product';
+        $baseSlug = Str::limit($baseSlug, 245, '');
+
+        do {
+            $slug = $baseSlug . '-' . random_int(100000, 999999);
+        } while (Product::where('slug', $slug)->exists());
+
+        return $slug;
+    }
+
     private function isAdminUser($user): bool
     {
         if (!$user) {
@@ -432,7 +444,7 @@ class ProductController extends Controller
             $duplicate = DB::transaction(function () use ($sourceProduct, $validated) {
                 $duplicate = $sourceProduct->replicate();
                 $duplicate->name = $validated['name'] ?? $this->makeDuplicateProductName($sourceProduct->name);
-                $duplicate->slug = $validated['slug'] ?? $this->makeUniqueProductSlug($duplicate->name);
+                $duplicate->slug = $validated['slug'] ?? $this->makeUniqueNumberedProductSlug($duplicate->name);
                 $duplicate->published = $this->validatedBoolean($validated, 'published', true);
                 $duplicate->approved = $this->validatedBoolean($validated, 'approved', true);
                 $duplicate->todays_deal = false;
