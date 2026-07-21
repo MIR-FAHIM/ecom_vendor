@@ -1094,6 +1094,17 @@ class ProductController extends Controller
                 'external_link_btn' => ['sometimes', 'nullable', 'string', 'max:255'],
                 'wholesale_product' => ['sometimes', 'nullable', 'boolean'],
                 'frequently_brought_selection_type' => ['sometimes', 'nullable', 'string', 'max:50'],
+            ], [
+                'slug.unique' => 'Product slug has already been taken.',
+                'slug.max' => 'Product slug must not be greater than 255 characters.',
+                'name.max' => 'Product name must not be greater than 255 characters.',
+                'unit_price.numeric' => 'Unit price must be a valid number.',
+                'unit_price.min' => 'Unit price cannot be negative.',
+                'weight.numeric' => 'Weight must be a valid number.',
+                'thumbnail_img.exists' => 'Selected thumbnail image does not exist.',
+                'category_id.exists' => 'Selected category does not exist.',
+                'brand_id.exists' => 'Selected brand does not exist.',
+                'user_id.exists' => 'Selected seller user does not exist.',
             ]);
 
             if (array_key_exists('photos', $validated) && is_array($validated['photos'])) {
@@ -1129,7 +1140,9 @@ class ProductController extends Controller
 
             return $this->success('Product updated successfully', $product);
         } catch (ValidationException $e) {
-            return $this->failed('Validation failed', $e->errors(), 422);
+            $firstError = collect($e->errors())->flatten()->first();
+
+            return $this->failed($firstError ?? 'Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
