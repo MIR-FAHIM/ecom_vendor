@@ -82,7 +82,7 @@ Route::prefix('products')->group(function () {
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
     Route::get('/images/{productId}', [ProductImageController::class, 'getProductImages'])->withoutMiddleware('token');
     Route::get('/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;
-    Route::get('/admin/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;
+    Route::get('/admin/list', [ProductController::class, 'listProductsForAdmin'])->withoutMiddleware('token');;
     Route::get('/list/inactive', [ProductController::class, 'listInactiveProducts'])->withoutMiddleware('token');;
     Route::get('/category/wise', [ProductController::class, 'listCategoryProducts'])->withoutMiddleware('token');;
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts'])->withoutMiddleware('token');;
