@@ -600,7 +600,7 @@ class ProductController extends Controller
     public function listProducts(Request $request)
     {
         try {
-            $query = Product::query()->with([
+            $query = Product::query()->fromActiveShop()->with([
                 'primaryImage',
                 'images',
                 'category',
@@ -758,7 +758,7 @@ class ProductController extends Controller
     public function listFeaturedProducts(Request $request)
     {
         try {
-            $query = Product::query()->with([
+            $query = Product::query()->fromActiveShop()->with([
                 'primaryImage',
                 'images',
                 'category',
@@ -814,7 +814,7 @@ class ProductController extends Controller
     public function listCategoryProducts(Request $request)
     {
         try {
-            $query = Product::query()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview']);
+            $query = Product::query()->fromActiveShop()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview']);
 
             if ($request->filled('category_id')) {
                 $categoryId = (int) $request->category_id;
@@ -871,7 +871,7 @@ class ProductController extends Controller
     public function listTodayDealProducts(Request $request)
     {
         try {
-            $query = Product::query()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
+            $query = Product::query()->fromActiveShop()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
 
 
 
@@ -923,7 +923,7 @@ class ProductController extends Controller
     public function listStockOutProducts(Request $request)
     {
         try {
-            $query = Product::query()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
+            $query = Product::query()->fromActiveShop()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
 
             if ($request->filled('shop_id')) {
                 $query->where('shop_id', $request->shop_id);
@@ -999,7 +999,7 @@ class ProductController extends Controller
     public function getProductDetails($identifier)
     {
         try {
-            $query = Product::with([
+            $query = Product::query()->fromActiveShop()->with([
                 'images.upload',
                 'primaryImage',
                 'brand',
@@ -1278,7 +1278,7 @@ class ProductController extends Controller
             return $this->failed('product_id is required', null, 422);
         }
 
-        $product = Product::find($productId);
+        $product = Product::fromActiveShop()->find($productId);
         if (!$product) {
             return $this->failed('Product not found', null, 404);
         }
@@ -1288,7 +1288,7 @@ class ProductController extends Controller
             return $this->failed('Shop not found for this product', null, 404);
         }
 
-        $products = Product::with([
+        $products = Product::fromActiveShop()->with([
             'primaryImage',
             'images',
             'category',
