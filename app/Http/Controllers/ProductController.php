@@ -679,7 +679,7 @@ class ProductController extends Controller
     public function listProductsForAdmin(Request $request)
     {
         try {
-            $query = Product::query()->fromActiveShop()->with([
+            $query = Product::query()->with([
                 'primaryImage',
                 'images',
                 'category',
