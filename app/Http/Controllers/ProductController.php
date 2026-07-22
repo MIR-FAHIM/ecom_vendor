@@ -1080,7 +1080,7 @@ class ProductController extends Controller
     public function getProductDetails($identifier)
     {
         try {
-            $query = Product::query()->fromActiveShop()->with([
+            $query = Product::query()->with([
                 'images.upload',
                 'primaryImage',
                 'brand',
