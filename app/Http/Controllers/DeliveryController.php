@@ -5,10 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\AssignDeliveryMan;
 use App\Models\Order;
 use App\Models\User;
+use App\Service\FirebaseNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DeliveryController extends Controller
 {
+    public function __construct(
+        private FirebaseNotificationService $firebaseNotificationService
+    ) {}
+
     private function success($message, $data = null, int $code = 200)
     {
         return response()->json([
@@ -25,6 +31,33 @@ class DeliveryController extends Controller
             'message' => $message,
             'errors' => $errors
         ], $code);
+    }
+
+    private function sendDeliveryAssignmentPush(User $deliveryMan, Order $order, AssignDeliveryMan $assignment): void
+    {
+        try {
+            $orderNumber = $order->order_number ?: ('#' . $order->id);
+
+            $this->firebaseNotificationService->sendToUser(
+                $deliveryMan,
+                'New delivery assigned',
+                'Order ' . $orderNumber . ' has been assigned to you.',
+                [
+                    'type' => 'delivery_assigned',
+                    'assignment_id' => $assignment->id,
+                    'order_id' => $order->id,
+                    'order_number' => $orderNumber,
+                    'status' => 'assigned',
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Delivery assignment push notification failed', [
+                'delivery_man_id' => $deliveryMan->id,
+                'order_id' => $order->id,
+                'assignment_id' => $assignment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -67,6 +100,8 @@ class DeliveryController extends Controller
                 }
                 $existing->save();
 
+                $this->sendDeliveryAssignmentPush($deliveryMan, $order, $existing);
+
                 return $this->success('Delivery man re-assigned successfully', $existing->load(['deliveryMan', 'order']));
             }
 
@@ -78,6 +113,8 @@ class DeliveryController extends Controller
             ]);
 
             Order::where('id', $validated['order_id'])->update(['status' => 'assigned deliveryman']);
+
+            $this->sendDeliveryAssignmentPush($deliveryMan, $order, $assignment);
 
             return $this->success('Delivery man assigned successfully', $assignment->load(['deliveryMan', 'order']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
