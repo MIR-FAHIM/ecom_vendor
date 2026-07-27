@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
@@ -26,25 +27,70 @@ class CategoryController extends Controller
         ], $code);
     }
 
+    private function makeUniqueCategorySlug(string $value): string
+    {
+        $baseSlug = Str::slug($value) ?: 'category';
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Category::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
     /**
      * POST /categories/create
      */
     public function createCategory(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
-                'name' => ['nullable', 'string', 'max:255'],
-                'slug' => ['nullable', 'string', 'max:255', 'unique:categories,slug'],
-                'icon' => ['nullable', 'string', 'max:255'],
-                'image' => ['nullable', 'string', 'max:255'],
-                'sort_order' => ['nullable', 'integer'],
-                'status' => ['nullable', 'string', 'max:50'],
+            $request->merge([
+                'parent_id' => $request->get('parent_id', 0),
+                'order_level' => $request->get('order_level', $request->get('sort_order')),
+                'is_active' => $request->get('is_active', $request->get('status')),
+                'cover_image' => $request->get('cover_image', $request->get('image')),
             ]);
+
+            $validated = $request->validate([
+                'parent_id' => ['nullable', 'integer', function ($attribute, $value, $fail) {
+                    if ($value === null || (int) $value === 0) {
+                        return;
+                    }
+
+                    if (!Category::whereKey($value)->exists()) {
+                        $fail('The selected parent category is invalid.');
+                    }
+                }],
+                'name' => ['required', 'string', 'max:50'],
+                'order_level' => ['nullable', 'integer'],
+                'is_active' => ['nullable', 'integer', 'between:0,1'],
+                'commision_rate' => ['nullable', 'numeric', 'between:0,999999.99'],
+                'banner' => ['nullable', 'integer', 'exists:uploads,id'],
+                'icon' => ['nullable', 'integer', 'exists:uploads,id'],
+                'cover_image' => ['nullable', 'integer', 'exists:uploads,id'],
+                'featured' => ['nullable', 'integer', 'between:0,1'],
+                'top' => ['nullable', 'integer', 'between:0,1'],
+                'digital' => ['nullable', 'integer', 'between:0,1'],
+                'slug' => ['nullable', 'string', 'max:255'],
+                'meta_title' => ['nullable', 'string', 'max:255'],
+                'meta_description' => ['nullable', 'string'],
+            ]);
+
+            $parentCategory = null;
+            $validated['parent_id'] = (int) ($validated['parent_id'] ?? 0);
+            if ($validated['parent_id'] > 0) {
+                $parentCategory = Category::find((int) $validated['parent_id']);
+            }
+
+            $validated['level'] = $parentCategory ? ((int) $parentCategory->level + 1) : 0;
+            $validated['slug'] = $this->makeUniqueCategorySlug($validated['slug'] ?? $validated['name']);
 
             $category = Category::create($validated);
 
-            return $this->success('Category created successfully', $category, 201);
+            return $this->success('Category created successfully', $category->load(['parent', 'banner', 'iconImage', 'coverImage']), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
@@ -136,15 +182,50 @@ class CategoryController extends Controller
                 return $this->failed('Category not found', null, 404);
             }
 
-            $validated = $request->validate([
-                'parent_id' => ['nullable', 'integer', 'exists:categories,id', Rule::notIn([$id])],
-                'name' => ['nullable', 'string', 'max:255'],
-                'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($category->id)],
-                'icon' => ['nullable', 'string', 'max:255'],
-                'image' => ['nullable', 'string', 'max:255'],
-                'sort_order' => ['nullable', 'integer'],
-                'status' => ['nullable', 'string', 'max:50'],
+            $request->merge([
+                'order_level' => $request->get('order_level', $request->get('sort_order')),
+                'is_active' => $request->get('is_active', $request->get('status')),
+                'cover_image' => $request->get('cover_image', $request->get('image')),
             ]);
+
+            $validated = $request->validate([
+                'parent_id' => ['nullable', 'integer', function ($attribute, $value, $fail) use ($id) {
+                    if ($value === null || (int) $value === 0) {
+                        return;
+                    }
+
+                    if ((int) $value === (int) $id) {
+                        $fail('The category cannot be its own parent.');
+                        return;
+                    }
+
+                    if (!Category::whereKey($value)->exists()) {
+                        $fail('The selected parent category is invalid.');
+                    }
+                }],
+                'name' => ['nullable', 'string', 'max:50'],
+                'order_level' => ['nullable', 'integer'],
+                'is_active' => ['nullable', 'integer', 'between:0,1'],
+                'commision_rate' => ['nullable', 'numeric', 'between:0,999999.99'],
+                'banner' => ['nullable', 'integer', 'exists:uploads,id'],
+                'icon' => ['nullable', 'integer', 'exists:uploads,id'],
+                'cover_image' => ['nullable', 'integer', 'exists:uploads,id'],
+                'featured' => ['nullable', 'integer', 'between:0,1'],
+                'top' => ['nullable', 'integer', 'between:0,1'],
+                'digital' => ['nullable', 'integer', 'between:0,1'],
+                'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($category->id)],
+                'meta_title' => ['nullable', 'string', 'max:255'],
+                'meta_description' => ['nullable', 'string'],
+            ]);
+
+            if (array_key_exists('parent_id', $validated)) {
+                $parentCategory = null;
+                if (!empty($validated['parent_id']) && (int) $validated['parent_id'] > 0) {
+                    $parentCategory = Category::find((int) $validated['parent_id']);
+                }
+
+                $validated['level'] = $parentCategory ? ((int) $parentCategory->level + 1) : 0;
+            }
 
             $category->fill($validated);
             $category->save();
