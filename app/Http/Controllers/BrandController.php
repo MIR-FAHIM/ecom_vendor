@@ -35,7 +35,7 @@ class BrandController extends Controller
             $validated = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255', 'unique:brands,slug'],
-                'logo' => ['nullable', 'string', 'max:255'],
+                'logo' => ['nullable', 'integer', 'exists:uploads,id'],
                 'status' => ['nullable', 'string', 'max:50'],
             ]);
 
