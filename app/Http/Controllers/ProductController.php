@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Brand;
 use App\Models\ProductCreateErrorLog;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
@@ -676,6 +677,58 @@ class ProductController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * GET /products/brand/{brandId}
+     * Filters: per_page, search
+     */
+    public function getProductsByBrand(Request $request, $brandId)
+    {
+        try {
+            $brand = Brand::find($brandId);
+
+            if (!$brand) {
+                return $this->failed('Brand not found', null, 404);
+            }
+
+            $query = Product::query()->fromActiveShop()->with([
+                'primaryImage',
+                'images',
+                'category',
+                'subCategory',
+                'brand',
+                'productDiscount',
+                'averageReview',
+                'shop'
+            ])->where('brand_id', $brand->id);
+
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                $tokens = preg_split('/\s+/', $search);
+
+                $query->where(function ($q) use ($tokens) {
+                    foreach ($tokens as $token) {
+                        $t = '%' . $token . '%';
+                        $q->where(function ($qq) use ($t) {
+                            $qq->where('name', 'like', $t)
+                                ->orWhere('slug', 'like', $t)
+                                ->orWhereHas('category', function ($qc) use ($t) {
+                                    $qc->where('name', 'like', $t);
+                                });
+                        });
+                    }
+                });
+            }
+
+            $perPage = (int) $request->get('per_page', 24);
+            $products = $query->where('approved', 1)->latest()->paginate($perPage);
+
+            return $this->success('Brand products fetched successfully', $products);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function listProductsForAdmin(Request $request)
     {
         try {
