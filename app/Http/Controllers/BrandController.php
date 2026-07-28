@@ -41,7 +41,7 @@ class BrandController extends Controller
 
             $brand = Brand::create($validated);
 
-            return $this->success('Brand created successfully', $brand, 201);
+            return $this->success('Brand created successfully', $brand->load('logo'), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
@@ -113,14 +113,14 @@ class BrandController extends Controller
             $validated = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255', Rule::unique('brands', 'slug')->ignore($brand->id)],
-                'logo' => ['nullable', 'string', 'max:255'],
+                'logo' => ['nullable', 'integer', 'exists:uploads,id'],
                 'status' => ['nullable', 'string', 'max:50'],
             ]);
 
             $brand->fill($validated);
             $brand->save();
 
-            return $this->success('Brand updated successfully', $brand);
+            return $this->success('Brand updated successfully', $brand->load('logo'));
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
