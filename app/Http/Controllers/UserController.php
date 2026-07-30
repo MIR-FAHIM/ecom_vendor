@@ -276,7 +276,7 @@ class UserController extends Controller
                 'lat' => ['nullable', 'numeric'],
                 'lon' => ['nullable', 'numeric'],
 
-                'is_banned' => ['nullable', 'boolean'],
+                'banned' => ['nullable', 'boolean'],
             ]);
 
             $user->fill([
@@ -298,7 +298,7 @@ class UserController extends Controller
                 'lat' => array_key_exists('lat', $validated) ? $validated['lat'] : $user->lat,
                 'lon' => array_key_exists('lon', $validated) ? $validated['lon'] : $user->lon,
 
-                'is_banned' => array_key_exists('is_banned', $validated) ? (bool) $validated['is_banned'] : $user->is_banned,
+                'banned' => array_key_exists('banned', $validated) ? (bool) $validated['banned'] : $user->banned,
             ]);
 
             if (!empty($validated['password'])) {
