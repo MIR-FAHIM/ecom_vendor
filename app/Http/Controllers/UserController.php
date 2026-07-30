@@ -327,7 +327,7 @@ class UserController extends Controller
                 return $this->failed('User not found', null, 404);
             }
 
-            $user->is_banned = true;
+            $user->banned = true;
             $user->save();
 
             return $this->success('User banned successfully', $user);
@@ -348,7 +348,7 @@ class UserController extends Controller
                 return $this->failed('User not found', null, 404);
             }
 
-            $user->is_banned = false;
+            $user->banned = false;
             $user->save();
 
             return $this->success('User unbanned successfully', $user);
