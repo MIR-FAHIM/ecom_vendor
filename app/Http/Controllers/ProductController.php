@@ -6,11 +6,13 @@ use App\Models\Product;
 use App\Models\Brand;
 use App\Models\ProductCreateErrorLog;
 use App\Models\ProductImage;
+use App\Models\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -521,7 +523,7 @@ class ProductController extends Controller
 
     /**
      * POST /products/images/upload/{productId}
-     * Upload product images separately (store paths/urls, not multipart file yet)
+     * Attach product images from uploaded files or existing media library upload IDs.
      */
     public function productImageUpload(Request $request, $productId)
     {
@@ -534,56 +536,100 @@ class ProductController extends Controller
                 return $this->failed('Product not found', null, 404);
             }
 
-            // 1) Validate multipart form-data files
             $validated = $request->validate([
                 'images' => ['required', 'array', 'min:1'],
-
-                // IMPORTANT: This must be a file, not a string
-                'images.*.image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-
+                'images.*.image' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+                'images.*.upload_id' => ['nullable', 'integer', 'exists:uploads,id'],
+                'images.*.media_id' => ['nullable', 'integer', 'exists:uploads,id'],
                 'images.*.alt_text' => ['nullable', 'string', 'max:255'],
                 'images.*.sort_order' => ['nullable', 'integer'],
                 'images.*.is_primary' => ['nullable'], // handle manually because form-data can be "true","false","1","0"
                 'images.*.status' => ['nullable', 'string', 'max:50'],
             ]);
 
+            $errors = [];
+            foreach ($validated['images'] as $index => $img) {
+                $hasFile = $request->hasFile("images.{$index}.image");
+                $hasUploadId = !empty($img['upload_id']) || !empty($img['media_id']);
+
+                if (!$hasFile && !$hasUploadId) {
+                    $errors["images.{$index}.image"] = ['Each image must include an image file, upload_id, or media_id.'];
+                }
+            }
+
+            if (!empty($errors)) {
+                throw ValidationException::withMessages($errors);
+            }
+
             $created = [];
+            $productHadPrimary = ProductImage::where('product_id', $product->id)
+                ->where('is_primary', true)
+                ->exists();
 
-            foreach ($validated['images'] as $img) {
-
-                // 2) Normalize is_primary from form-data reliably
+            foreach ($validated['images'] as $index => $img) {
                 $isPrimary = false;
                 if (array_key_exists('is_primary', $img)) {
                     $isPrimary = filter_var($img['is_primary'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                     $isPrimary = ($isPrimary === null) ? false : $isPrimary;
                 }
 
-                // 3) If this one is primary, reset other primary flags
+                $uploadId = $img['upload_id'] ?? $img['media_id'] ?? null;
+
+                if ($request->hasFile("images.{$index}.image")) {
+                    $file = $request->file("images.{$index}.image");
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = time() . '_' . Str::random(8) . '.' . $extension;
+                    $path = "products/{$product->id}/{$filename}";
+
+                    Storage::disk('public')->putFileAs("products/{$product->id}", $file, $filename);
+
+                    $upload = Upload::create([
+                        'file_original_name' => $file->getClientOriginalName(),
+                        'file_name' => $path,
+                        'user_id' => $request->user()?->id ?? $request->input('user_id'),
+                        'file_size' => $file->getSize(),
+                        'extension' => $extension,
+                        'type' => $file->getClientMimeType(),
+                        'external_link' => null,
+                    ]);
+
+                    $uploadId = $upload->id;
+                }
+
+                $shouldBePrimary = $isPrimary || (!$productHadPrimary && count($created) === 0);
+
                 if ($isPrimary) {
                     ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
                 }
 
-                // 4) Store file and save path
-                // storage/app/public/products/{productId}/xxxx.webp
-                $path = $img['image']->store("products/{$product->id}", 'public');
-
-                $created[] = ProductImage::create([
+                $createdImage = ProductImage::create([
                     'product_id' => $product->id,
-                    'image' => $path, // store path in DB
+                    'image' => $uploadId,
                     'alt_text' => $img['alt_text'] ?? null,
                     'sort_order' => $img['sort_order'] ?? null,
-                    'is_primary' => $isPrimary,
+                    'is_primary' => $shouldBePrimary,
                     'status' => $img['status'] ?? 'active',
                 ]);
+
+                if ($shouldBePrimary) {
+                    $product->thumbnail_img = $uploadId;
+                    $productHadPrimary = true;
+                }
+
+                $created[] = $createdImage;
             }
+
+            $product->save();
 
             DB::commit();
 
-            $product->load(['images', 'primaryImage']);
+            $images = ProductImage::with('upload')
+                ->whereIn('id', collect($created)->pluck('id'))
+                ->latest()
+                ->get();
 
             return $this->success('Product images uploaded successfully', [
-                'product' => $product,
-                'created_images' => $created,
+                'images' => $images,
             ], 201);
         } catch (ValidationException $e) {
             DB::rollBack();
