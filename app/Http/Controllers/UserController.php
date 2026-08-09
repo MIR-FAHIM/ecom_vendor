@@ -263,7 +263,7 @@ class UserController extends Controller
                 'password' => ['nullable', 'string', 'min:6'],
                 'role' => ['nullable', Rule::in(['admin', 'vendor', 'customer'])],
 
-                'mobile' => ['nullable', 'string', 'max:50'],
+                'phone' => ['nullable', 'string', 'max:50'],
                 'optional_phone' => ['nullable', 'string', 'max:50'],
                 'address' => ['nullable', 'string', 'max:1000'],
                 'fcm_token' => ['nullable', 'string', 'max:4096'],
@@ -284,7 +284,7 @@ class UserController extends Controller
                 'email' => array_key_exists('email', $validated) ? $validated['email'] : $user->email,
                 'role' => array_key_exists('role', $validated) ? $validated['role'] : $user->role,
 
-                'mobile' => array_key_exists('mobile', $validated) ? $validated['mobile'] : $user->mobile,
+                'phone' => array_key_exists('phone', $validated) ? $validated['phone'] : $user->phone,
                 'optional_phone' => array_key_exists('optional_phone', $validated) ? $validated['optional_phone'] : $user->optional_phone,
                 'address' => array_key_exists('address', $validated) ? $validated['address'] : $user->address,
                 'device_token' => array_key_exists('device_token', $validated)
