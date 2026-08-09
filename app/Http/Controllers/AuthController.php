@@ -104,6 +104,10 @@ class AuthController extends Controller
                 return $this->failed('Invalid credentials', null, 401);
             }
 
+            if (!Hash::check($validated['password'], $user->password)) {
+                return $this->failed('Invalid credentials', null, 401);
+            }
+
             if (!empty($validated['fcm_token'])) {
                 $user->forceFill(['device_token' => $validated['fcm_token']])->save();
             }
