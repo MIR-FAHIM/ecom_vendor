@@ -39,4 +39,9 @@ class StoreSubscription extends Model
     {
         return $this->belongsTo(SubscriptionPackage::class, 'subscription_package_id');
     }
+
+    public function payments()
+    {
+        return $this->hasMany(OnlinePayment::class, 'store_subscription_id');
+    }
 }

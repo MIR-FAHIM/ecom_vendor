@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Shops;
 use App\Models\StoreSubscription;
 use App\Models\SubscriptionPackage;
+use App\Service\AmarPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -12,6 +13,10 @@ use Illuminate\Validation\Rule;
 
 class SubscriptionPackageController extends Controller
 {
+    public function __construct(
+        private AmarPayService $amarPayService
+    ) {}
+
     private function success($message, $data = null, int $code = 200)
     {
         return response()->json([
@@ -326,6 +331,13 @@ class SubscriptionPackageController extends Controller
             ]);
 
             $paymentRequired = (float) $subscription->price > 0;
+
+            if ($paymentRequired) {
+                return $this->amarPayService->initiateStoreSubscriptionPayment(
+                    $subscription,
+                    $request->attributes->get('api_user')
+                );
+            }
 
             return $this->success('Subscription initiated successfully', [
                 'subscription' => $subscription->load('package'),

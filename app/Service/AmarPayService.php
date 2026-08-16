@@ -4,6 +4,8 @@ namespace App\Service;
 
 use App\Models\OnlinePayment;
 use App\Models\Order;
+use App\Models\Shops;
+use App\Models\StoreSubscription;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
@@ -14,6 +16,9 @@ use Illuminate\Support\Collection;
 
 class AmarPayService
 {
+    private const PAYMENT_TYPE_ORDER = 'order';
+    private const PAYMENT_TYPE_STORE_SUBSCRIPTION = 'store_subscription';
+
     public function initiatePayment(?int $orderId, ?User $authenticatedUser = null, ?string $paymentGroupId = null): JsonResponse
     {
         $configError = $this->validateConfig();
@@ -56,6 +61,7 @@ class AmarPayService
         $merchantTransactionId = 'PAY-' . $primaryOrder->id . '-' . now()->format('ymdHis') . '-' . random_int(1000, 9999);
 
         $payment = OnlinePayment::create([
+            'payment_type' => self::PAYMENT_TYPE_ORDER,
             'order_id' => $primaryOrder->id,
             'payment_group_id' => $paymentGroupId,
             'order_ids' => $orderIds,
@@ -137,6 +143,142 @@ class AmarPayService
         ]);
     }
 
+    public function initiateStoreSubscriptionPayment(StoreSubscription $subscription, ?User $authenticatedUser = null): JsonResponse
+    {
+        $configError = $this->validateConfig();
+        if ($configError) {
+            return $this->jsonFailed($configError, null, 500);
+        }
+
+        if (!$authenticatedUser) {
+            return $this->jsonFailed('Authentication required', null, 401);
+        }
+
+        $subscription->loadMissing(['store.user', 'package']);
+        $store = $subscription->store;
+
+        if (!$store) {
+            return $this->jsonFailed('Store not found for subscription', null, 404);
+        }
+
+        if (!$this->canInitiatePaymentForStore($store, $authenticatedUser)) {
+            return $this->jsonFailed('You cannot pay for this store subscription', [
+                'store_owner_id' => $store->user_id,
+                'authenticated_user_id' => (int) $authenticatedUser->id,
+            ], 403);
+        }
+
+        if ($subscription->payment_status === 'paid' || $subscription->status === 'active') {
+            return $this->jsonFailed('This subscription is already paid or active', null, 409);
+        }
+
+        $amount = round((float) $subscription->price, 2);
+        if ($amount <= 0) {
+            $subscription->update([
+                'status' => 'active',
+                'payment_status' => 'paid',
+                'starts_at' => $subscription->starts_at ?: now(),
+            ]);
+
+            return $this->jsonSuccess('Subscription activated successfully', [
+                'subscription' => $subscription->fresh(['package', 'store']),
+                'payment_required' => false,
+                'payment_url' => null,
+            ]);
+        }
+
+        $merchantTransactionId = 'SUB-' . $subscription->id . '-' . now()->format('ymdHis') . '-' . random_int(1000, 9999);
+
+        $payment = OnlinePayment::create([
+            'payment_type' => self::PAYMENT_TYPE_STORE_SUBSCRIPTION,
+            'order_id' => null,
+            'payment_group_id' => null,
+            'order_ids' => null,
+            'store_subscription_id' => $subscription->id,
+            'store_id' => $store->id,
+            'user_id' => $authenticatedUser->id,
+            'gateway' => 'aamarpay',
+            'merchant_transaction_id' => $merchantTransactionId,
+            'amount' => $amount,
+            'currency' => $subscription->currency ?: 'BDT',
+            'status' => 'initiated',
+            'initiated_at' => now(),
+        ]);
+
+        $customerName = $store->shop_name ?: $store->name ?: $authenticatedUser->name ?: 'Store Owner';
+        $customerEmail = $store->email ?: $authenticatedUser->email ?: 'merchant@example.com';
+        $customerPhone = $store->phone ?: $authenticatedUser->phone ?: '01000000000';
+        $address = $store->address ?: 'Not provided';
+        $city = $store->district ?: $store->area ?: 'Dhaka';
+        $state = $store->zone ?: $store->district ?: 'Dhaka';
+
+        $payload = [
+            'store_id' => config('services.aamarpay.store_id'),
+            'tran_id' => $merchantTransactionId,
+            'success_url' => $this->callbackUrl('success'),
+            'fail_url' => $this->callbackUrl('fail'),
+            'cancel_url' => $this->callbackUrl('cancel'),
+            'amount' => number_format($amount, 2, '.', ''),
+            'currency' => $subscription->currency ?: 'BDT',
+            'signature_key' => config('services.aamarpay.signature_key'),
+            'desc' => 'Store subscription #' . $subscription->id . ' - ' . optional($subscription->package)->name,
+            'cus_name' => $customerName,
+            'cus_email' => $customerEmail,
+            'cus_phone' => $customerPhone,
+            'cus_add1' => $address,
+            'cus_city' => $city,
+            'cus_state' => $state,
+            'cus_country' => 'Bangladesh',
+            'opt_a' => 'store_subscription',
+            'opt_b' => (string) $subscription->id,
+            'opt_c' => (string) $store->id,
+            'type' => 'json',
+        ];
+        $payload = array_filter($payload, fn ($value) => $value !== null && $value !== '');
+
+        try {
+            $response = Http::timeout(20)
+                ->asJson()
+                ->post($this->paymentUrl(), $payload);
+        } catch (ConnectionException $e) {
+            $payment->update([
+                'status' => 'failed',
+                'gateway_response' => ['error' => $e->getMessage()],
+            ]);
+
+            return $this->jsonFailed('Could not connect to AamarPay', null, 502);
+        }
+
+        $result = $response->json();
+        if (!is_array($result)) {
+            $result = ['raw_response' => $response->body()];
+        }
+
+        $payment->update([
+            'gateway_response' => [
+                'request' => $this->safePayloadForLogs($payload),
+                'response' => $result,
+            ],
+        ]);
+
+        if (!$response->successful() || !$this->gatewayAccepted($result) || empty($result['payment_url'])) {
+            $payment->update(['status' => 'failed']);
+
+            return $this->jsonFailed('AamarPay rejected the subscription payment request', $result, 502);
+        }
+
+        $payment->update(['status' => 'pending']);
+
+        return $this->jsonSuccess('Subscription payment initiated successfully', [
+            'subscription' => $subscription->fresh(['package', 'store']),
+            'payment_required' => true,
+            'payment_id' => $payment->id,
+            'merchant_transaction_id' => $payment->merchant_transaction_id,
+            'amount' => $payment->amount,
+            'payment_url' => $result['payment_url'],
+        ], 201);
+    }
+
     public function success(array $data): JsonResponse
     {
         $payment = $this->findPaymentFromCallback($data);
@@ -156,7 +298,7 @@ class AmarPayService
         $payment = DB::transaction(function () use ($payment, $data, $validation) {
             $lockedPayment = OnlinePayment::whereKey($payment->id)->lockForUpdate()->first();
 
-            if ($lockedPayment->status !== 'success') {
+            if ($lockedPayment->status !== 'success' && $lockedPayment->payment_type === self::PAYMENT_TYPE_ORDER) {
                 $orderIds = $this->orderIdsForPayment($lockedPayment);
                 $orders = Order::whereIn('id', $orderIds)->lockForUpdate()->get();
                 $gatewayTransactionId = $data['pg_txnid'] ?? $lockedPayment->gateway_transaction_id;
@@ -188,10 +330,40 @@ class AmarPayService
                         ]
                     );
                 }
+            } elseif ($lockedPayment->status !== 'success' && $lockedPayment->payment_type === self::PAYMENT_TYPE_STORE_SUBSCRIPTION) {
+                $gatewayTransactionId = $data['pg_txnid'] ?? $lockedPayment->gateway_transaction_id;
+
+                $subscription = StoreSubscription::whereKey($lockedPayment->store_subscription_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $lockedPayment->update([
+                    'status' => 'success',
+                    'gateway_transaction_id' => $gatewayTransactionId,
+                    'gateway_fee' => $data['gateway_fee'] ?? $lockedPayment->gateway_fee ?? 0,
+                    'gateway_response' => $this->appendCallbackData($lockedPayment, $data, $validation),
+                    'paid_at' => $lockedPayment->paid_at ?: now(),
+                ]);
+
+                if ($subscription) {
+                    StoreSubscription::where('store_id', $subscription->store_id)
+                        ->where('id', '!=', $subscription->id)
+                        ->whereIn('status', ['pending', 'active'])
+                        ->update(['status' => 'cancelled']);
+
+                    $subscription->update([
+                        'status' => 'active',
+                        'payment_status' => 'paid',
+                        'payment_reference' => $gatewayTransactionId ?: $lockedPayment->merchant_transaction_id,
+                        'starts_at' => $subscription->starts_at ?: now(),
+                    ]);
+                }
             }
 
-            $freshPayment = $lockedPayment->fresh(['order']);
-            $freshPayment->paid_orders = Order::whereIn('id', $this->orderIdsForPayment($lockedPayment))->get();
+            $freshPayment = $lockedPayment->fresh(['order', 'storeSubscription.package', 'store']);
+            if ($lockedPayment->payment_type === self::PAYMENT_TYPE_ORDER) {
+                $freshPayment->paid_orders = Order::whereIn('id', $this->orderIdsForPayment($lockedPayment))->get();
+            }
 
             return $freshPayment;
         });
@@ -227,10 +399,22 @@ class AmarPayService
             'gateway_response' => $this->appendCallbackData($payment, $data),
         ]);
 
-        if ($status === 'failed') {
+        if ($payment->payment_type === self::PAYMENT_TYPE_ORDER && $status === 'failed') {
             Order::whereIn('id', $this->orderIdsForPayment($payment))
                 ->where('payment_status', '!=', 'paid')
                 ->update(['payment_status' => 'failed']);
+        }
+
+        if ($payment->payment_type === self::PAYMENT_TYPE_STORE_SUBSCRIPTION) {
+            $subscriptionStatus = $status === 'failed' ? 'pending' : 'cancelled';
+            $paymentStatus = $status === 'failed' ? 'failed' : 'unpaid';
+
+            StoreSubscription::whereKey($payment->store_subscription_id)
+                ->where('payment_status', '!=', 'paid')
+                ->update([
+                    'status' => $subscriptionStatus,
+                    'payment_status' => $paymentStatus,
+                ]);
         }
 
         return $this->jsonSuccess($message, ['payment_id' => $payment->id]);
@@ -271,6 +455,15 @@ class AmarPayService
         return $orders->every(
             fn (Order $order) => (int) $order->user_id === (int) $authenticatedUser->id
         );
+    }
+
+    private function canInitiatePaymentForStore(Shops $store, User $authenticatedUser): bool
+    {
+        if ($this->isAdmin($authenticatedUser)) {
+            return true;
+        }
+
+        return (int) $store->user_id === (int) $authenticatedUser->id;
     }
 
     private function isAdmin(User $authenticatedUser): bool

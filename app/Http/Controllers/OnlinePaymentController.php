@@ -46,8 +46,11 @@ class OnlinePaymentController extends Controller
         return redirect()->away($this->frontendPaymentUrl('payment_success_path', [
             'status' => 'success',
             'payment_id' => $payment->id ?? null,
+            'payment_type' => $payment->payment_type ?? null,
             'payment_group_id' => $payment->payment_group_id ?? null,
             'order_id' => $payment->order_id ?? null,
+            'store_id' => $payment->store_id ?? null,
+            'store_subscription_id' => $payment->store_subscription_id ?? null,
             'amount' => $payment->amount ?? null,
             'merchant_transaction_id' => $payment->merchant_transaction_id ?? $request->input('mer_txnid'),
             'gateway_transaction_id' => $payment->gateway_transaction_id ?? $request->input('pg_txnid'),

@@ -10,9 +10,12 @@ class OnlinePayment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'payment_type',
         'order_id',
         'payment_group_id',
         'order_ids',
+        'store_subscription_id',
+        'store_id',
         'user_id',
         'gateway',
         'merchant_transaction_id',
@@ -30,6 +33,8 @@ class OnlinePayment extends Model
         'amount' => 'decimal:2',
         'gateway_fee' => 'decimal:2',
         'order_ids' => 'array',
+        'store_subscription_id' => 'integer',
+        'store_id' => 'integer',
         'gateway_response' => 'array',
         'initiated_at' => 'datetime',
         'paid_at' => 'datetime',
@@ -44,6 +49,16 @@ class OnlinePayment extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function storeSubscription()
+    {
+        return $this->belongsTo(StoreSubscription::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Shops::class, 'store_id');
     }
 
     public function user()
