@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             DivisionSeeder::class,
+            SubscriptionPackageSeeder::class,
         ]);
     }
 }

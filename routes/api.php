@@ -32,6 +32,7 @@ use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\LoginSuccessLogController;
 use App\Http\Controllers\FirebaseNotificationController;
+use App\Http\Controllers\SubscriptionPackageController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -75,6 +76,16 @@ Route::prefix('brands')->group(function () {
     Route::delete('/delete/{id}', [BrandController::class, 'deleteBrand']);
 });
 
+Route::prefix('subscription-packages')->group(function () {
+    Route::get('/', [SubscriptionPackageController::class, 'index']);
+    Route::get('/slug/{slug}', [SubscriptionPackageController::class, 'detailsBySlug']);
+    Route::get('/{id}', [SubscriptionPackageController::class, 'details']);
+    Route::post('/create', [SubscriptionPackageController::class, 'create']);
+    Route::put('/update/{id}', [SubscriptionPackageController::class, 'update']);
+    Route::patch('/inactive/{id}', [SubscriptionPackageController::class, 'inactive']);
+    Route::delete('/delete/{id}', [SubscriptionPackageController::class, 'delete']);
+});
+
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
     Route::post('/duplicate/{id}', [ProductController::class, 'duplicateProductById']);
@@ -106,6 +117,11 @@ Route::prefix('shops')->group(function () {
     Route::post('/update/{id}', [ShopController::class, 'updateShop']);
     Route::patch('/status/{id}', [ShopController::class, 'updateShopStatus']);
     Route::delete('/delete/{id}', [ShopController::class, 'deleteShop']);
+});
+
+Route::prefix('stores')->group(function () {
+    Route::get('/{storeId}/subscription', [SubscriptionPackageController::class, 'storeCurrentSubscription']);
+    Route::post('/{storeId}/subscription/subscribe', [SubscriptionPackageController::class, 'subscribe']);
 });
 
 

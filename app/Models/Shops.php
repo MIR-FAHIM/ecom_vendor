@@ -47,4 +47,16 @@ class Shops extends Model
     {
         return $this->belongsTo(Upload::class , 'banner' ,);
     }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(StoreSubscription::class, 'store_id');
+    }
+
+    public function currentSubscription()
+    {
+        return $this->hasOne(StoreSubscription::class, 'store_id')
+            ->whereIn('status', ['active', 'pending'])
+            ->latestOfMany();
+    }
 }
