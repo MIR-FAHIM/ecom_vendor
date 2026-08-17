@@ -77,9 +77,9 @@ Route::prefix('brands')->group(function () {
 });
 
 Route::prefix('subscription-packages')->group(function () {
-    Route::get('/', [SubscriptionPackageController::class, 'index']);
-    Route::get('/slug/{slug}', [SubscriptionPackageController::class, 'detailsBySlug']);
-    Route::get('/{id}', [SubscriptionPackageController::class, 'details']);
+    Route::get('/', [SubscriptionPackageController::class, 'index'])->withoutMiddleware('token');
+    Route::get('/slug/{slug}', [SubscriptionPackageController::class, 'detailsBySlug'])->withoutMiddleware('token');
+    Route::get('/{id}', [SubscriptionPackageController::class, 'details'])->withoutMiddleware('token');
     Route::post('/create', [SubscriptionPackageController::class, 'create']);
     Route::put('/update/{id}', [SubscriptionPackageController::class, 'update']);
     Route::patch('/inactive/{id}', [SubscriptionPackageController::class, 'inactive']);
